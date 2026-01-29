@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\AcceptanceController;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
@@ -56,13 +58,8 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
-        Route::get('/categories', function () {
-            return Inertia::render('Admin/Categories/Index');
-        })->name('categories.index');
-
-        Route::get('/tags', function () {
-            return Inertia::render('Admin/Tags/Index');
-        })->name('tags.index');
+        Route::resource('categories', AdminCategoryController::class)->except(['show']);
+        Route::resource('tags', AdminTagController::class)->except(['show']);
     });
 
 Route::middleware(['auth', 'role:moderator'])

@@ -32,11 +32,9 @@ const navLinkClass = (href, exact = false) => {
                     </Link>
                     <Link :href="route('admin.categories.index')" :class="navLinkClass('/admin/categories')">
                         <span>Categories</span>
-                        <span class="text-xs text-slate-500">Phase E</span>
                     </Link>
                     <Link :href="route('admin.tags.index')" :class="navLinkClass('/admin/tags')">
                         <span>Tags</span>
-                        <span class="text-xs text-slate-500">Phase E</span>
                     </Link>
                 </nav>
             </aside>
