@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
@@ -53,6 +53,92 @@ watch(
         answersData.value = value.map((answer) => clone(answer));
     }
 );
+
+const commentForms = reactive({
+    question: { body_markdown: '', errors: {} },
+    answers: {},
+});
+
+const editingComment = ref(null);
+const editingErrors = ref('');
+
+const commentFormForAnswer = (answerId) => {
+    if (!commentForms.answers[answerId]) {
+        commentForms.answers[answerId] = { body_markdown: '', errors: {} };
+    }
+    return commentForms.answers[answerId];
+};
+
+const setComments = (type, id, comments) => {
+    if (type === 'question' && questionData.value.id === id) {
+        questionData.value.comments = comments;
+        return;
+    }
+    const answer = answersData.value.find((item) => item.id === id);
+    if (answer) {
+        answer.comments = comments;
+    }
+};
+
+const handleCommentErrors = (targetForm, errorResponse) => {
+    targetForm.errors = {};
+    const errors = errorResponse?.response?.data?.errors;
+    if (errors?.body_markdown?.length) {
+        targetForm.errors.body_markdown = errors.body_markdown[0];
+    }
+};
+
+const createComment = async (commentableType, commentableId, targetForm) => {
+    targetForm.errors = {};
+    try {
+        const response = await window.axios.post(route('comments.store'), {
+            commentable_type: commentableType,
+            commentable_id: commentableId,
+            body_markdown: targetForm.body_markdown,
+        });
+        setComments(commentableType, commentableId, response.data.comments);
+        targetForm.body_markdown = '';
+    } catch (error) {
+        handleCommentErrors(targetForm, error);
+    }
+};
+
+const startEditingComment = (commentableType, commentableId, comment) => {
+    editingComment.value = {
+        commentableType,
+        commentableId,
+        commentId: comment.id,
+        body_markdown: comment.body_markdown,
+    };
+    editingErrors.value = '';
+};
+
+const cancelEditing = () => {
+    editingComment.value = null;
+    editingErrors.value = '';
+};
+
+const submitCommentEdit = async () => {
+    if (!editingComment.value) return;
+    try {
+        const response = await window.axios.put(route('comments.update', editingComment.value.commentId), {
+            body_markdown: editingComment.value.body_markdown,
+        });
+        setComments(editingComment.value.commentableType, editingComment.value.commentableId, response.data.comments);
+        cancelEditing();
+    } catch (error) {
+        const errors = error?.response?.data?.errors;
+        editingErrors.value = errors?.body_markdown?.[0] || 'Unable to update comment.';
+    }
+};
+
+const deleteComment = async (commentableType, commentableId, commentId) => {
+    if (!confirm('Delete this comment?')) return;
+    const response = await window.axios.delete(route('comments.destroy', commentId));
+    setComments(commentableType, commentableId, response.data.comments);
+};
+
+const isEditingComment = (commentId) => editingComment.value?.commentId === commentId;
 
 const answerForm = useForm({
     body_markdown: '',
@@ -315,6 +401,86 @@ const toggleAccept = async (answer) => {
                 </div>
             </div>
 
+            <section class="rounded-3xl border border-slate-800 bg-slate-950/60 p-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold">Comments</h2>
+                    <span class="text-sm text-slate-500">{{ questionData.comments?.length || 0 }} total</span>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                    <div
+                        v-for="comment in questionData.comments || []"
+                        :key="comment.id"
+                        class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1">
+                                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                    {{ comment.author?.name || 'Unknown' }} · {{ formatDate(comment.created_at) }}
+                                </p>
+                                <div v-if="isEditingComment(comment.id)" class="mt-2 space-y-2">
+                                    <textarea
+                                        v-model="editingComment.body_markdown"
+                                        rows="3"
+                                        class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                                    />
+                                    <InputError :message="editingErrors" />
+                                    <div class="flex gap-2">
+                                        <PrimaryButton type="button" @click="submitCommentEdit">Save</PrimaryButton>
+                                        <button
+                                            type="button"
+                                            class="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:border-slate-500"
+                                            @click="cancelEditing"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-else class="mt-2 text-sm text-slate-200 markdown-body" v-html="comment.body_html" />
+                            </div>
+                            <div class="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                <button
+                                    v-if="comment.can.update"
+                                    type="button"
+                                    class="text-teal-200 hover:text-teal-100"
+                                    @click="startEditingComment('question', questionData.id, comment)"
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    v-if="comment.can.delete"
+                                    type="button"
+                                    class="text-rose-300 hover:text-rose-200"
+                                    @click="deleteComment('question', questionData.id, comment.id)"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="!(questionData.comments?.length)" class="rounded-2xl border border-dashed border-slate-800 p-4 text-sm text-slate-400">
+                        No comments yet.
+                    </div>
+                </div>
+
+                <div v-if="can.comment" class="mt-4 space-y-2">
+                    <textarea
+                        v-model="commentForms.question.body_markdown"
+                        rows="3"
+                        placeholder="Add a comment"
+                        class="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                    />
+                    <InputError :message="commentForms.question.errors.body_markdown" />
+                    <div class="flex items-center gap-3">
+                        <PrimaryButton type="button" @click="createComment('question', questionData.id, commentForms.question)">
+                            Post Comment
+                        </PrimaryButton>
+                        <p class="text-xs text-slate-500">Markdown supported; keep it concise.</p>
+                    </div>
+                </div>
+            </section>
+
             <section class="flex flex-col gap-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-2xl font-semibold">Answers</h2>
@@ -427,6 +593,88 @@ const toggleAccept = async (answer) => {
                                             <div class="px-4 py-3 text-xs text-slate-400">
                                                 {{ attachment.original_name }}
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-lg font-semibold">Comments</h3>
+                                        <span class="text-xs text-slate-500">{{ answer.comments?.length || 0 }} total</span>
+                                    </div>
+
+                                    <div class="mt-3 space-y-3">
+                                        <div
+                                            v-for="comment in answer.comments || []"
+                                            :key="comment.id"
+                                            class="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                                        >
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="flex-1">
+                                                    <p class="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                                                        {{ comment.author?.name || 'Unknown' }} · {{ formatDate(comment.created_at) }}
+                                                    </p>
+                                                    <div v-if="isEditingComment(comment.id)" class="mt-2 space-y-2">
+                                                        <textarea
+                                                            v-model="editingComment.body_markdown"
+                                                            rows="3"
+                                                            class="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                                                        />
+                                                        <InputError :message="editingErrors" />
+                                                        <div class="flex gap-2">
+                                                            <PrimaryButton type="button" @click="submitCommentEdit">Save</PrimaryButton>
+                                                            <button
+                                                                type="button"
+                                                                class="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:border-slate-500"
+                                                                @click="cancelEditing"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div v-else class="mt-1 text-sm text-slate-200 markdown-body" v-html="comment.body_html" />
+                                                </div>
+                                                <div class="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                                                    <button
+                                                        v-if="comment.can.update"
+                                                        type="button"
+                                                        class="text-teal-200 hover:text-teal-100"
+                                                        @click="startEditingComment('answer', answer.id, comment)"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        v-if="comment.can.delete"
+                                                        type="button"
+                                                        class="text-rose-300 hover:text-rose-200"
+                                                        @click="deleteComment('answer', answer.id, comment.id)"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div v-if="!(answer.comments?.length)" class="rounded-xl border border-dashed border-slate-800 p-3 text-sm text-slate-400">
+                                            No comments yet.
+                                        </div>
+                                    </div>
+
+                                    <div v-if="can.comment" class="mt-3 space-y-2">
+                                        <textarea
+                                            v-model="commentFormForAnswer(answer.id).body_markdown"
+                                            rows="3"
+                                            placeholder="Add a comment"
+                                            class="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                                        />
+                                        <InputError :message="commentFormForAnswer(answer.id).errors.body_markdown" />
+                                        <div class="flex items-center gap-3">
+                                            <PrimaryButton
+                                                type="button"
+                                                @click="createComment('answer', answer.id, commentFormForAnswer(answer.id))"
+                                            >
+                                                Post Comment
+                                            </PrimaryButton>
+                                            <p class="text-xs text-slate-500">Markdown supported.</p>
                                         </div>
                                     </div>
                                 </div>
