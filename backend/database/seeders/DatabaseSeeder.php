@@ -254,7 +254,7 @@ class DatabaseSeeder extends Seeder
 
                 if ($answer->user_id !== $question->user_id) {
                     $existingNotification = $question->author?->notifications()
-                        ->where('data->answer_id', $answer->id)
+                        ->where('data->answer_id', (string) $answer->id)
                         ->exists();
 
                     if (!$existingNotification && $question->author) {
