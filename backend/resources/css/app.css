@@ -11,3 +11,65 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 1.25rem 0 0.75rem;
+}
+
+.markdown-body h1 {
+    font-size: 1.5rem;
+}
+
+.markdown-body h2 {
+    font-size: 1.25rem;
+}
+
+.markdown-body h3 {
+    font-size: 1.125rem;
+}
+
+.markdown-body p {
+    margin-bottom: 0.75rem;
+    color: #e2e8f0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    margin: 0.75rem 0 0.75rem 1.25rem;
+    list-style: disc;
+}
+
+.markdown-body ol {
+    list-style: decimal;
+}
+
+.markdown-body a {
+    color: #5eead4;
+    text-decoration: underline;
+}
+
+.markdown-body code {
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.375rem;
+    font-size: 0.875rem;
+}
+
+.markdown-body pre {
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.markdown-body blockquote {
+    border-left: 3px solid rgba(45, 212, 191, 0.6);
+    padding-left: 1rem;
+    color: #cbd5f5;
+    margin: 0.75rem 0;
+}

@@ -43,6 +43,9 @@ const linkClass = (active) =>
                         <Link :href="route('dashboard')" :class="linkClass(route().current('dashboard'))">
                             Dashboard
                         </Link>
+                        <Link :href="route('questions.index')" :class="linkClass(route().current('questions.*'))">
+                            Questions
+                        </Link>
                         <Link v-if="isAdmin" :href="route('admin.dashboard')" :class="linkClass(route().current('admin.*'))">
                             Admin
                         </Link>
