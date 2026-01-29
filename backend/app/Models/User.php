@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, MustVerifyEmailTrait;
+
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_MODERATOR = 'moderator';
+    public const ROLE_MEMBER = 'member';
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -44,5 +50,38 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public static function roles(): array
+    {
+        return [
+            self::ROLE_ADMIN,
+            self::ROLE_MODERATOR,
+            self::ROLE_MEMBER,
+        ];
+    }
+
+    public static function roleLabels(): array
+    {
+        return [
+            self::ROLE_ADMIN => 'Admin',
+            self::ROLE_MODERATOR => 'Moderator',
+            self::ROLE_MEMBER => 'Član',
+        ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isModerator(): bool
+    {
+        return $this->role === self::ROLE_MODERATOR;
+    }
+
+    public function isMember(): bool
+    {
+        return $this->role === self::ROLE_MEMBER;
     }
 }
