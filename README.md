@@ -22,6 +22,14 @@ make composer CMD="install"
 make artisan CMD="key:generate"
 make artisan CMD="migrate"
 ```
+On Windows PowerShell (without `make`), use:
+```powershell
+Copy-Item backend/.env.example backend/.env
+docker compose up -d --build
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
 
 ## Running with Docker
 - App (Nginx): http://localhost:8080
@@ -35,6 +43,13 @@ make logs
 make artisan CMD="route:list"
 make test
 make npm CMD="run build"
+```
+PowerShell equivalents:
+```powershell
+docker compose logs -f --tail=100
+docker compose exec app php artisan route:list
+docker compose exec app php artisan test
+docker compose exec node npm run build
 ```
 
 ## Environment variables (placeholders)
