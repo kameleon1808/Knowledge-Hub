@@ -5,10 +5,13 @@ namespace Database\Seeders;
 use App\Models\Answer;
 use App\Models\Question;
 use App\Models\User;
+use App\Models\Vote;
+use App\Services\AcceptanceService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Seeder;
 use App\Services\MarkdownService;
+use App\Services\VoteService;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +23,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $markdown = app(MarkdownService::class);
+        $voteService = app(VoteService::class);
+        $acceptanceService = app(AcceptanceService::class);
 
         $users = [
             [
@@ -104,5 +109,46 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        $admin = $seededUsers[User::ROLE_ADMIN];
+        $moderator = $seededUsers[User::ROLE_MODERATOR];
+        $member = $seededUsers[User::ROLE_MEMBER];
+
+        foreach ($questionRecords as $question) {
+            $question->load(['author', 'answers']);
+
+            $questionVoter = $question->user_id === $admin->id ? $moderator : $admin;
+            $this->ensureVote($voteService, $questionVoter, $question, 1);
+
+            $acceptedAnswer = $question->answers->first();
+            if ($acceptedAnswer && $question->accepted_answer_id !== $acceptedAnswer->id) {
+                $acceptanceService->acceptAnswer($question, $acceptedAnswer, $question->author);
+            }
+
+            foreach ($question->answers as $index => $answer) {
+                $answerVoter = $answer->user_id === $member->id ? $moderator : $member;
+                $value = $index % 2 === 0 ? 1 : -1;
+                $this->ensureVote($voteService, $answerVoter, $answer, $value);
+            }
+        }
+    }
+
+    private function ensureVote(VoteService $voteService, User $voter, $votable, int $value): void
+    {
+        $existing = Vote::query()
+            ->where('user_id', $voter->id)
+            ->where('votable_type', $votable->getMorphClass())
+            ->where('votable_id', $votable->getKey())
+            ->first();
+
+        if ($existing && $existing->value === $value) {
+            return;
+        }
+
+        if ($voter->id === $votable->user_id) {
+            return;
+        }
+
+        $voteService->castVote($voter, $votable, $value);
     }
 }
