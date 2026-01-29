@@ -53,7 +53,7 @@ const removeExisting = (attachment) => {
 const submit = () => {
     form.attachments = selectedFiles.value;
 
-    form.put(route('questions.update', props.question.id), {
+    form.transform((data) => ({ ...data, _method: 'put' })).post(route('questions.update', props.question.id), {
         forceFormData: true,
         onSuccess: () => {
             selectedFiles.value = [];
