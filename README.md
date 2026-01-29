@@ -81,8 +81,29 @@ Baseline role migrations run after the default users table; the pivot depends on
 - `make` not found on Windows: use the PowerShell commands above or run in WSL.
 - `No application encryption key`: run `php artisan key:generate` inside the app container.
 - `Vite manifest not found` or blank page: ensure the `node` service is running or run `npm run build` in that container.
+- `npm ENOTEMPTY` (node_modules volume stuck): remove only the `node_modules` volume and restart.
+- `host not found in upstream "app"`: the PHP container isn't running; restart `app` first, then `web`.
 - Database connection errors: wait ~10 seconds for Postgres to start, then re-run migrations.
 - Port conflicts: update ports in `docker-compose.yml` and set `APP_URL` accordingly.
+
+### Fix for `npm ENOTEMPTY` (Windows/first-run safe)
+This can happen if `node_modules` was created partially inside the Docker volume. Fix it without touching the database:
+```powershell
+docker compose down
+docker volume ls | findstr node_modules
+# remove only the node_modules volume for this project
+docker volume rm knowledge-hub_node_modules
+docker compose up -d --build
+```
+If the volume name is different, use the exact name shown by `docker volume ls`.
+
+### Fix for `host not found in upstream "app"`
+Nginx starts before PHP-FPM or the `app` container failed.
+```powershell
+docker compose up -d app db
+docker compose logs app --tail=100
+docker compose up -d web node
+```
 
 ## Resetting the environment
 Warning: this removes database data.
