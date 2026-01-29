@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\AcceptanceController;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -17,7 +20,12 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::resource('questions', QuestionController::class);
+    Route::post('/votes', [VoteController::class, 'store'])->name('votes.store');
+    Route::delete('/votes', [VoteController::class, 'destroy'])->name('votes.destroy');
+    Route::post('/questions/{question}/accept/{answer}', [AcceptanceController::class, 'store'])->name('questions.accept');
+    Route::delete('/questions/{question}/accept', [AcceptanceController::class, 'destroy'])->name('questions.accept.destroy');
     Route::post('/questions/{question}/answers', [AnswerController::class, 'store'])->name('answers.store');
     Route::get('/answers/{answer}/edit', [AnswerController::class, 'edit'])->name('answers.edit');
     Route::put('/answers/{answer}', [AnswerController::class, 'update'])->name('answers.update');

@@ -35,4 +35,15 @@ class QuestionPolicy
             || $user->isModerator()
             || $question->user_id === $user->id;
     }
+
+    public function vote(User $user, Question $question): bool
+    {
+        return in_array($user->role, User::roles(), true)
+            && $question->user_id !== $user->id;
+    }
+
+    public function accept(User $user, Question $question): bool
+    {
+        return $question->user_id === $user->id;
+    }
 }

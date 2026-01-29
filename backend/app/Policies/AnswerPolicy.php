@@ -26,4 +26,10 @@ class AnswerPolicy
             || $user->isModerator()
             || $answer->user_id === $user->id;
     }
+
+    public function vote(User $user, Answer $answer): bool
+    {
+        return in_array($user->role, User::roles(), true)
+            && $answer->user_id !== $user->id;
+    }
 }

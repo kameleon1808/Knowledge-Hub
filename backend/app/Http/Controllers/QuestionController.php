@@ -80,13 +80,31 @@ class QuestionController extends Controller
 
     public function show(Request $request, Question $question): Response
     {
+        $userId = $request->user()?->id;
+
         $question->load([
             'author',
             'attachments',
-            'answers' => function ($query) {
-                $query->with(['author', 'attachments'])->orderBy('created_at');
+            'votes' => function ($query) use ($userId) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                }
             },
         ]);
+
+        $question->loadSum('votes as score', 'value');
+
+        $question->load(['answers' => function ($query) use ($userId) {
+            $query->with([
+                'author',
+                'attachments',
+                'votes' => function ($voteQuery) use ($userId) {
+                    if ($userId) {
+                        $voteQuery->where('user_id', $userId);
+                    }
+                },
+            ])->withSum('votes as score', 'value')->orderBy('created_at');
+        }]);
 
         $questionPayload = [
             'id' => $question->id,
@@ -96,15 +114,21 @@ class QuestionController extends Controller
             'author' => [
                 'id' => $question->author?->id,
                 'name' => $question->author?->name,
+                'reputation' => $question->author?->reputation ?? 0,
             ],
+            'score' => $question->score,
+            'current_user_vote' => $question->votes->first()?->value,
+            'accepted_answer_id' => $question->accepted_answer_id,
             'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
             'can' => [
                 'update' => $request->user()->can('update', $question),
                 'delete' => $request->user()->can('delete', $question),
+                'vote' => $request->user()->can('vote', $question),
+                'accept' => $request->user()->can('accept', $question),
             ],
         ];
 
-        $answers = $question->answers->map(function ($answer) use ($request) {
+        $answers = $question->answers->map(function ($answer) use ($request, $question) {
             return [
                 'id' => $answer->id,
                 'body_html' => $answer->body_html ?: $this->markdown->toHtml($answer->body_markdown),
@@ -112,11 +136,16 @@ class QuestionController extends Controller
                 'author' => [
                     'id' => $answer->author?->id,
                     'name' => $answer->author?->name,
+                    'reputation' => $answer->author?->reputation ?? 0,
                 ],
+                'score' => $answer->score,
+                'current_user_vote' => $answer->votes->first()?->value,
+                'is_accepted' => $answer->id === $question->accepted_answer_id,
                 'attachments' => $answer->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
                 'can' => [
                     'update' => $request->user()->can('update', $answer),
                     'delete' => $request->user()->can('delete', $answer),
+                    'vote' => $request->user()->can('vote', $answer),
                 ],
             ];
         });
