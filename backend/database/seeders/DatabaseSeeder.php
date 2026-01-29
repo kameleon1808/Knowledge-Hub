@@ -7,7 +7,10 @@ use App\Models\Question;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
+use App\Models\Comment;
+use App\Models\Bookmark;
 use App\Models\Vote;
+use App\Notifications\AnswerPostedOnYourQuestion;
 use App\Services\AcceptanceService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Support\Facades\Hash;
@@ -222,6 +225,53 @@ class DatabaseSeeder extends Seeder
                 $value = $index % 2 === 0 ? 1 : -1;
                 $this->ensureVote($voteService, $answerVoter, $answer, $value);
             }
+
+            $commentAuthor = $question->author->is($admin) ? $moderator : $admin;
+            Comment::updateOrCreate(
+                [
+                    'user_id' => $commentAuthor->id,
+                    'commentable_type' => Question::class,
+                    'commentable_id' => $question->id,
+                ],
+                [
+                    'body_markdown' => 'Thanks for sharing this question. Adding a short comment for context.',
+                    'body_html' => $markdown->toHtml('Thanks for sharing this question. Adding a short comment for context.'),
+                ]
+            );
+
+            foreach ($question->answers as $answer) {
+                Comment::updateOrCreate(
+                    [
+                        'user_id' => $member->id,
+                        'commentable_type' => Answer::class,
+                        'commentable_id' => $answer->id,
+                    ],
+                    [
+                        'body_markdown' => 'Quick note: ensure the steps include owners.',
+                        'body_html' => $markdown->toHtml('Quick note: ensure the steps include owners.'),
+                    ]
+                );
+
+                if ($answer->user_id !== $question->user_id) {
+                    $existingNotification = $question->author?->notifications()
+                        ->where('data->answer_id', $answer->id)
+                        ->exists();
+
+                    if (!$existingNotification && $question->author) {
+                        $question->author->notify(new AnswerPostedOnYourQuestion($answer));
+                    }
+                }
+            }
+        }
+
+        $allQuestions = Question::all();
+        foreach ($seededUsers as $user) {
+            $allQuestions->shuffle()->take(2)->each(function ($question) use ($user) {
+                Bookmark::firstOrCreate([
+                    'user_id' => $user->id,
+                    'question_id' => $question->id,
+                ]);
+            });
         }
     }
 
