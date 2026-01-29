@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Answer;
 use App\Models\Question;
+use App\Models\Category;
+use App\Models\Tag;
 use App\Models\User;
 use App\Models\Vote;
 use App\Services\AcceptanceService;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Seeder;
 use App\Services\MarkdownService;
 use App\Services\VoteService;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -58,6 +61,91 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        $categories = [
+            [
+                'name' => 'Processes',
+                'description' => 'Team processes and playbooks',
+                'children' => [
+                    ['name' => 'Onboarding', 'description' => 'New joiner guides'],
+                    ['name' => 'Deployments', 'description' => 'Release workflows'],
+                ],
+            ],
+            [
+                'name' => 'Engineering',
+                'description' => 'Engineering practices',
+                'children' => [
+                    ['name' => 'Testing', 'description' => 'Quality practices'],
+                    ['name' => 'Incidents', 'description' => 'Incident response'],
+                ],
+            ],
+            [
+                'name' => 'Product',
+                'description' => 'Product knowledge',
+                'children' => [
+                    ['name' => 'Research', 'description' => 'User research'],
+                    ['name' => 'Roadmap', 'description' => 'Planning and prioritization'],
+                ],
+            ],
+        ];
+
+        $categoryMap = collect();
+
+        foreach ($categories as $categoryData) {
+            $root = Category::updateOrCreate(
+                ['slug' => Str::slug($categoryData['name'])],
+                [
+                    'name' => $categoryData['name'],
+                    'description' => $categoryData['description'],
+                    'parent_id' => null,
+                ]
+            );
+
+            $categoryMap->push($root);
+
+            foreach ($categoryData['children'] as $childData) {
+                $child = Category::updateOrCreate(
+                    ['slug' => Str::slug($childData['name'])],
+                    [
+                        'name' => $childData['name'],
+                        'description' => $childData['description'],
+                        'parent_id' => $root->id,
+                    ]
+                );
+                $categoryMap->push($child);
+            }
+        }
+
+        $tagNames = [
+            'Documentation',
+            'CI/CD',
+            'Monitoring',
+            'Security',
+            'UX',
+            'API',
+            'Database',
+            'Performance',
+            'Release',
+            'Testing',
+            'Analytics',
+            'Infrastructure',
+            'Productivity',
+            'Retrospective',
+            'Postmortem',
+            'Runbook',
+            'SLA',
+            'Backup',
+            'Design System',
+            'Accessibility',
+        ];
+
+        $tagIds = collect($tagNames)->map(function ($name) {
+            $tag = Tag::updateOrCreate(
+                ['slug' => Str::slug($name)],
+                ['name' => $name]
+            );
+            return $tag->id;
+        });
+
         $questionTemplates = [
             User::ROLE_ADMIN => [
                 'How do we structure team knowledge updates?',
@@ -92,6 +180,10 @@ class DatabaseSeeder extends Seeder
         }
 
         foreach ($questionRecords as $question) {
+            $category = $categoryMap->random();
+            $question->update(['category_id' => $category->id]);
+            $question->tags()->sync($tagIds->shuffle()->take(rand(2, 5)));
+
             $responders = collect($seededUsers)->reject(fn ($user) => $user->id === $question->user_id);
 
             foreach ($responders as $responder) {
