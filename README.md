@@ -49,6 +49,7 @@ Edit `backend/.env` as needed. Phase A ships placeholders only.
 make artisan CMD="migrate"
 make artisan CMD="db:seed"
 ```
+Baseline role migrations run after the default users table; the pivot depends on both.
 
 ## Architectural decisions
 - PostgreSQL + pgvector: chosen for future vector search/RAG capabilities.
