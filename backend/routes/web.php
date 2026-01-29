@@ -15,6 +15,22 @@ Route::get('/', function () {
     return Inertia::render('Home');
 })->name('home');
 
+Route::get('/vote', function () {
+    return redirect()->route('questions.index');
+})->name('vote.redirect');
+
+Route::get('/votes', function () {
+    return redirect()->route('questions.index');
+})->name('votes.redirect');
+
+Route::get('/questions/{question}/accept/{answer}', function ($question) {
+    return redirect()->route('questions.show', $question);
+})->name('questions.accept.redirect');
+
+Route::get('/questions/{question}/accept', function ($question) {
+    return redirect()->route('questions.show', $question);
+})->name('questions.accept.index.redirect');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
