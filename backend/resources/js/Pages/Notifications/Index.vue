@@ -15,12 +15,12 @@ const user = computed(() => page.props.auth.user);
 
 const markAsRead = async (id) => {
     await window.axios.post(route('notifications.read', id));
-    router.reload({ only: ['notifications', 'notifications.unread_count'], preserveScroll: true });
+    router.reload({ only: ['notifications'], preserveScroll: true });
 };
 
 const markAllAsRead = async () => {
     await window.axios.post(route('notifications.readAll'));
-    router.reload({ only: ['notifications', 'notifications.unread_count'], preserveScroll: true });
+    router.reload({ only: ['notifications'], preserveScroll: true });
 };
 
 const notificationLink = (notification) => {

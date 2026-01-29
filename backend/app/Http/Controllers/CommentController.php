@@ -83,7 +83,9 @@ class CommentController extends Controller
 
     private function commentPayloads(Model $commentable, $currentUser): array
     {
-        $commentable->loadMissing(['comments.user']);
+        // Reload comments to include the freshly created/updated/deleted record.
+        $commentable->unsetRelation('comments');
+        $commentable->load(['comments.user']);
 
         return $commentable->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $currentUser))->all();
     }
