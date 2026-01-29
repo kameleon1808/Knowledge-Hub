@@ -213,6 +213,31 @@ const applyReputationUpdate = (reputation) => {
     answersData.value.forEach((answer) => updateAuthor(answer.author));
 };
 
+const bookmarkPending = ref(false);
+
+const toggleBookmark = async () => {
+    if (!authUser.value) {
+        alert('Sign in to bookmark questions.');
+        return;
+    }
+    if (bookmarkPending.value) return;
+
+    bookmarkPending.value = true;
+    try {
+        if (questionData.value.is_bookmarked) {
+            const response = await window.axios.delete(route('questions.bookmark.destroy', questionData.value.id));
+            questionData.value.is_bookmarked = response.data.bookmarked;
+            questionData.value.bookmarks_count = response.data.bookmarks_count;
+        } else {
+            const response = await window.axios.post(route('questions.bookmark', questionData.value.id));
+            questionData.value.is_bookmarked = response.data.bookmarked;
+            questionData.value.bookmarks_count = response.data.bookmarks_count;
+        }
+    } finally {
+        bookmarkPending.value = false;
+    }
+};
+
 const applyVoteResponse = (payload) => {
     if (payload.votable_type === 'question') {
         questionData.value.score = payload.score;
@@ -354,6 +379,21 @@ const toggleAccept = async (answer) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition"
+                        :class="
+                            questionData.is_bookmarked
+                                ? 'border-amber-400/70 bg-amber-400/10 text-amber-100'
+                                : 'border-slate-700 text-slate-200 hover:border-amber-400 hover:text-amber-100'
+                        "
+                        :disabled="bookmarkPending"
+                        @click="toggleBookmark"
+                    >
+                        <span v-if="questionData.is_bookmarked">★</span>
+                        <span v-else>☆</span>
+                        <span>{{ questionData.bookmarks_count || 0 }}</span>
+                    </button>
                     <Link
                         v-if="questionData.can.update"
                         :href="route('questions.edit', questionData.id)"

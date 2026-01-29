@@ -6,7 +6,6 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-
 const roleLabels = {
     admin: 'Admin',
     moderator: 'Moderator',
@@ -45,6 +44,9 @@ const linkClass = (active) =>
                         </Link>
                         <Link :href="route('questions.index')" :class="linkClass(route().current('questions.*'))">
                             Questions
+                        </Link>
+                        <Link :href="route('bookmarks.index')" :class="linkClass(route().current('bookmarks.index'))">
+                            My Bookmarks
                         </Link>
                         <Link v-if="isAdmin" :href="route('admin.dashboard')" :class="linkClass(route().current('admin.*'))">
                             Admin

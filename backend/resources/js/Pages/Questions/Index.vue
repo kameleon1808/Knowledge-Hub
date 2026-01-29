@@ -92,6 +92,33 @@ const activeFilters = computed(() => {
     if (from.value || to.value) chips.push({ label: `Range: ${from.value || '…'} → ${to.value || '…'}` });
     return chips;
 });
+
+const bookmarkPending = ref({});
+
+const toggleBookmark = async (question) => {
+    const user = page.props.auth?.user;
+    if (!user) {
+        alert('Sign in to manage bookmarks.');
+        return;
+    }
+
+    if (bookmarkPending.value[question.id]) return;
+    bookmarkPending.value = { ...bookmarkPending.value, [question.id]: true };
+
+    try {
+        if (question.is_bookmarked) {
+            const response = await window.axios.delete(route('questions.bookmark.destroy', question.id));
+            question.is_bookmarked = response.data.bookmarked;
+            question.bookmarks_count = response.data.bookmarks_count;
+        } else {
+            const response = await window.axios.post(route('questions.bookmark', question.id));
+            question.is_bookmarked = response.data.bookmarked;
+            question.bookmarks_count = response.data.bookmarks_count;
+        }
+    } finally {
+        bookmarkPending.value = { ...bookmarkPending.value, [question.id]: false };
+    }
+};
 </script>
 
 <template>
@@ -234,11 +261,11 @@ const activeFilters = computed(() => {
                     :key="question.id"
                     class="rounded-2xl border border-slate-800 bg-slate-950/50 p-6 transition hover:border-teal-500/50"
                 >
-                    <div class="flex flex-col gap-2">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <Link
-                                    :href="route('questions.show', question.id)"
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <Link
+                                        :href="route('questions.show', question.id)"
                                     class="text-xl font-semibold text-slate-100 hover:text-teal-200"
                                 >
                                     {{ question.title }}
@@ -252,14 +279,29 @@ const activeFilters = computed(() => {
                                     >
                                         {{ answeredLabel(question) }}
                                     </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="text-right text-sm text-slate-400">
-                                <div v-if="question.category" class="text-xs text-slate-300">
-                                    {{ question.category.name }}
-                                </div>
-                                <div v-if="question.tags?.length" class="flex flex-wrap gap-1 justify-end mt-1">
-                                    <span
+                                <div class="flex flex-col items-end gap-2 text-right text-sm text-slate-400">
+                                    <button
+                                        type="button"
+                                        class="flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition"
+                                        :class="
+                                            question.is_bookmarked
+                                                ? 'border-amber-400/70 bg-amber-400/10 text-amber-100'
+                                                : 'border-slate-700 text-slate-200 hover:border-amber-300 hover:text-amber-100'
+                                        "
+                                        :disabled="bookmarkPending[question.id]"
+                                        @click="toggleBookmark(question)"
+                                    >
+                                        <span v-if="question.is_bookmarked">★</span>
+                                        <span v-else>☆</span>
+                                        <span>{{ question.bookmarks_count || 0 }}</span>
+                                    </button>
+                                    <div v-if="question.category" class="text-xs text-slate-300">
+                                        {{ question.category.name }}
+                                    </div>
+                                    <div v-if="question.tags?.length" class="flex flex-wrap gap-1 justify-end mt-1">
+                                        <span
                                         v-for="tag in question.tags"
                                         :key="tag.id"
                                         class="rounded-full border border-slate-800 bg-slate-900/70 px-2 py-0.5 text-[11px] text-slate-200"
