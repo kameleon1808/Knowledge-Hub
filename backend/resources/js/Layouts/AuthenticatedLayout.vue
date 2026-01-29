@@ -95,6 +95,7 @@ const linkClass = (active) =>
                                 <div class="font-medium">{{ user?.name }}</div>
                                 <div class="text-slate-400">{{ user?.email }}</div>
                             </div>
+                            <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
                             <DropdownLink v-if="isAdmin" :href="route('admin.dashboard')">Admin Panel</DropdownLink>
                             <DropdownLink v-if="isModerator" :href="route('moderator.dashboard')">Moderator Area</DropdownLink>
                             <DropdownLink :href="route('logout')" method="post" as="button">
