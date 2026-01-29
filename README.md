@@ -11,6 +11,8 @@ Phase D voting/accepted/reputation documentation and test plan:
 - `/docs/phase-d-voting-accepted-reputation.md`
 - `/docs/user-test-plan-phase-d.md`
 - `/docs/dev-notes-phase-d.md`
+Phase E categories/tags/filters/search documentation and test plan:
+- `/docs/phase-e-categories-tags-filters-search.md` (with `/docs/user-test-plan-phase-e.md` and `/docs/dev-notes-phase-e.md`)
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
