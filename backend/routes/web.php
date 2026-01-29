@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\AcceptanceController;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
@@ -43,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('questions', QuestionController::class);
     Route::post('/votes', [VoteController::class, 'store'])->name('votes.store');
     Route::delete('/votes', [VoteController::class, 'destroy'])->name('votes.destroy');
+    Route::post('/questions/{question}/bookmark', [BookmarkController::class, 'store'])->name('questions.bookmark');
+    Route::delete('/questions/{question}/bookmark', [BookmarkController::class, 'destroy'])->name('questions.bookmark.destroy');
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::patch('/comments/{comment}', [CommentController::class, 'update']);

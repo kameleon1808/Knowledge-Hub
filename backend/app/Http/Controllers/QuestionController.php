@@ -89,6 +89,13 @@ class QuestionController extends Controller
             'tags',
             'attachments',
             'comments.user',
+            'bookmarks' => function ($bookmarkQuery) use ($userId) {
+                if ($userId) {
+                    $bookmarkQuery->where('user_id', $userId);
+                } else {
+                    $bookmarkQuery->whereRaw('1 = 0');
+                }
+            },
             'votes' => function ($query) use ($userId) {
                 if ($userId) {
                     $query->where('user_id', $userId);
@@ -127,6 +134,8 @@ class QuestionController extends Controller
             'current_user_vote' => $question->votes->first()?->value,
             'accepted_answer_id' => $question->accepted_answer_id,
             'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
+            'bookmarks_count' => $question->bookmarks()->count(),
+            'is_bookmarked' => $question->bookmarks->isNotEmpty(),
             'comments' => $question->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $request->user())),
             'can' => [
                 'update' => $request->user()->can('update', $question),

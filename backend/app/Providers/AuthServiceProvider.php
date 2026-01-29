@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\Answer;
 use App\Models\Comment;
+use App\Models\Bookmark;
 use App\Models\User;
 use App\Models\Question;
 use App\Policies\AnswerPolicy;
 use App\Policies\CommentPolicy;
+use App\Policies\BookmarkPolicy;
 use App\Policies\QuestionPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +25,7 @@ class AuthServiceProvider extends ServiceProvider
         Question::class => QuestionPolicy::class,
         Answer::class => AnswerPolicy::class,
         Comment::class => CommentPolicy::class,
+        Bookmark::class => BookmarkPolicy::class,
     ];
 
     /**

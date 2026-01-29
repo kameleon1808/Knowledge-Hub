@@ -22,8 +22,16 @@ class QuestionIndexQuery
         $query = Question::query()
             ->select('questions.*')
             ->with(['author:id,name', 'category:id,name,slug', 'tags:id,name,slug'])
-            ->withCount('answers')
+            ->withCount(['answers', 'bookmarks'])
             ->withSum('votes as score', 'value');
+
+        $userId = $this->request->user()?->id;
+
+        if ($userId) {
+            $query->withExists(['bookmarks as is_bookmarked' => function ($bookmarkQuery) use ($userId) {
+                $bookmarkQuery->where('user_id', $userId);
+            }]);
+        }
 
         $this->applyCategoryFilter($query, $filters['category_id']);
         $this->applyTagFilter($query, $filters['tags']);
