@@ -3,6 +3,10 @@
 Knowledge Hub za Timove is an internal StackOverflow/Laracasts-inspired platform for teams. Phase A delivers the production-ready foundation: Laravel 12, Inertia + Vue 3 UI, Tailwind styling, and a Dockerized environment with PostgreSQL + pgvector.
 
 Phase B authentication/RBAC details and demo credentials are documented in `/docs`.
+Phase C Q&A core documentation and test plan:
+- `/docs/phase-c-qa-core.md`
+- `/docs/user-test-plan-phase-c.md`
+- `/docs/dev-notes-phase-c.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
