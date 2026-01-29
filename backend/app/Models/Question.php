@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Tag;
+use App\Models\Bookmark;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +38,21 @@ class Question extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    public function bookmarkedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'bookmarks');
+    }
+
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at');
     }
 
     public function category(): BelongsTo

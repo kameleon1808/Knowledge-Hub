@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Bookmark;
+use App\Models\Comment;
+use App\Models\Question;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -101,6 +105,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    public function bookmarkedQuestions(): BelongsToMany
+    {
+        return $this->belongsToMany(Question::class, 'bookmarks')->withTimestamps();
     }
 
     public function votes(): HasMany
