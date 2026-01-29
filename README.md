@@ -7,6 +7,10 @@ Phase C Q&A core documentation and test plan:
 - `/docs/phase-c-qa-core.md`
 - `/docs/user-test-plan-phase-c.md`
 - `/docs/dev-notes-phase-c.md`
+Phase D voting/accepted/reputation documentation and test plan:
+- `/docs/phase-d-voting-accepted-reputation.md`
+- `/docs/user-test-plan-phase-d.md`
+- `/docs/dev-notes-phase-d.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
