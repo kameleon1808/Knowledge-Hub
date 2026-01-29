@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -12,5 +14,26 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 });
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/categories', function () {
+            return Inertia::render('Admin/Categories/Index');
+        })->name('categories.index');
+
+        Route::get('/tags', function () {
+            return Inertia::render('Admin/Tags/Index');
+        })->name('tags.index');
+    });
+
+Route::middleware(['auth', 'role:moderator'])
+    ->prefix('moderator')
+    ->name('moderator.')
+    ->group(function () {
+        Route::get('/', [ModeratorDashboardController::class, 'index'])->name('dashboard');
+    });
 
 require __DIR__.'/auth.php';
