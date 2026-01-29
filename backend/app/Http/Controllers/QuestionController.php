@@ -6,7 +6,10 @@ use App\Http\Requests\StoreQuestionRequest;
 use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Answer;
 use App\Models\Attachment;
+use App\Models\Category;
 use App\Models\Question;
+use App\Models\Tag;
+use App\Queries\QuestionIndexQuery;
 use App\Services\AttachmentService;
 use App\Services\MarkdownService;
 use Illuminate\Http\Request;
@@ -25,22 +28,14 @@ class QuestionController extends Controller
 
     public function index(Request $request): Response
     {
-        $questions = Question::query()
-            ->with('author')
-            ->latest()
-            ->paginate(10)
-            ->through(fn (Question $question) => [
-                'id' => $question->id,
-                'title' => $question->title,
-                'created_at' => $question->created_at?->toIso8601String(),
-                'author' => [
-                    'id' => $question->author?->id,
-                    'name' => $question->author?->name,
-                ],
-            ]);
+        $query = new QuestionIndexQuery($request);
+        $questions = $query->paginate();
 
         return Inertia::render('Questions/Index', [
             'questions' => $questions,
+            'filters' => $query->filters(),
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'slug']),
+            'tags' => Tag::query()->orderBy('name')->get(['id', 'name', 'slug']),
             'can' => [
                 'create' => $request->user()->can('create', Question::class),
             ],
@@ -50,6 +45,8 @@ class QuestionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Questions/Create', [
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'tags' => Tag::query()->orderBy('name')->get(['id', 'name']),
             'attachmentConfig' => $this->attachmentConfig(),
         ]);
     }
@@ -59,6 +56,7 @@ class QuestionController extends Controller
         $question = DB::transaction(function () use ($request): Question {
             $question = Question::create([
                 'user_id' => $request->user()->id,
+                'category_id' => $request->input('category_id'),
                 'title' => $request->string('title')->toString(),
                 'body_markdown' => $request->string('body_markdown')->toString(),
                 'body_html' => $this->markdown->toHtml($request->string('body_markdown')->toString()),
@@ -69,6 +67,8 @@ class QuestionController extends Controller
                 $request->file('attachments', []),
                 $request->user()
             );
+
+            $question->tags()->sync($request->input('tags', []));
 
             return $question;
         });
@@ -84,6 +84,8 @@ class QuestionController extends Controller
 
         $question->load([
             'author',
+            'category',
+            'tags',
             'attachments',
             'votes' => function ($query) use ($userId) {
                 if ($userId) {
@@ -116,6 +118,8 @@ class QuestionController extends Controller
                 'name' => $question->author?->name,
                 'reputation' => $question->author?->reputation ?? 0,
             ],
+            'category' => $question->category?->only(['id', 'name', 'slug']),
+            'tags' => $question->tags->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug'])),
             'score' => $question->score,
             'current_user_vote' => $question->votes->first()?->value,
             'accepted_answer_id' => $question->accepted_answer_id,
@@ -169,8 +173,12 @@ class QuestionController extends Controller
                 'id' => $question->id,
                 'title' => $question->title,
                 'body_markdown' => $question->body_markdown,
+                'category_id' => $question->category_id,
                 'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
+                'tag_ids' => $question->tags()->pluck('tags.id')->all(),
             ],
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            'tags' => Tag::query()->orderBy('name')->get(['id', 'name']),
             'attachmentConfig' => $this->attachmentConfig(),
         ]);
     }
@@ -182,6 +190,7 @@ class QuestionController extends Controller
                 'title' => $request->string('title')->toString(),
                 'body_markdown' => $request->string('body_markdown')->toString(),
                 'body_html' => $this->markdown->toHtml($request->string('body_markdown')->toString()),
+                'category_id' => $request->input('category_id'),
             ]);
 
             $this->attachments->deleteByIds(
@@ -194,6 +203,8 @@ class QuestionController extends Controller
                 $request->file('attachments', []),
                 $request->user()
             );
+
+            $question->tags()->sync($request->input('tags', []));
         });
 
         return redirect()

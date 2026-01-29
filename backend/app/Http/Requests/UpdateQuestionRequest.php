@@ -19,6 +19,9 @@ class UpdateQuestionRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:200'],
             'body_markdown' => ['required', 'string'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['integer', 'exists:tags,id'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', "mimes:{$mimes}", "max:{$maxSize}"],
             'remove_attachments' => ['nullable', 'array'],

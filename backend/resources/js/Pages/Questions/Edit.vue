@@ -13,6 +13,14 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    categories: {
+        type: Array,
+        default: () => [],
+    },
+    tags: {
+        type: Array,
+        default: () => [],
+    },
     attachmentConfig: {
         type: Object,
         required: true,
@@ -25,6 +33,8 @@ const flashSuccess = computed(() => page.props.flash?.success);
 const form = useForm({
     title: props.question.title,
     body_markdown: props.question.body_markdown,
+    category_id: props.question.category_id,
+    tags: props.question.tag_ids || [],
     attachments: [],
     remove_attachments: [],
 });
@@ -101,6 +111,40 @@ const submit = () => {
                     <InputLabel value="Details" />
                     <MarkdownEditor v-model="form.body_markdown" />
                     <InputError class="mt-2" :message="form.errors.body_markdown" />
+                </div>
+
+                <div class="rounded-2xl border border-slate-800 bg-slate-950/50 p-6 space-y-4">
+                    <div>
+                        <InputLabel for="category_id" value="Category" />
+                        <select
+                            id="category_id"
+                            v-model="form.category_id"
+                            class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                        >
+                            <option :value="null">None</option>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">
+                                {{ category.name }}
+                            </option>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.category_id" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="tags" value="Tags" />
+                        <select
+                            id="tags"
+                            v-model="form.tags"
+                            multiple
+                            class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                        >
+                            <option v-for="tag in tags" :key="tag.id" :value="tag.id">
+                                {{ tag.name }}
+                            </option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500">Only existing tags may be used.</p>
+                        <InputError class="mt-2" :message="form.errors.tags" />
+                        <InputError v-if="form.errors['tags.0']" class="mt-2" :message="form.errors['tags.0']" />
+                    </div>
                 </div>
 
                 <div class="rounded-2xl border border-slate-800 bg-slate-950/50 p-6">

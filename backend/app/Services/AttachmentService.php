@@ -44,20 +44,13 @@ class AttachmentService
 
     public function deleteForQuestion(Question $question): void
     {
+        $question->load('answers.attachments');
+
         $this->deleteForAttachable($question);
 
-        $answerIds = $question->answers()->pluck('id');
-
-        if ($answerIds->isEmpty()) {
-            return;
+        foreach ($question->answers as $answer) {
+            $this->deleteAttachments($answer->attachments);
         }
-
-        $attachments = Attachment::query()
-            ->where('attachable_type', Answer::class)
-            ->whereIn('attachable_id', $answerIds)
-            ->get();
-
-        $this->deleteAttachments($attachments);
     }
 
     private function storeForAttachable(Model $attachable, string $directory, array $files, User $user): Collection

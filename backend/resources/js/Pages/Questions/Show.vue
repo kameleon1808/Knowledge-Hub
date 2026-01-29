@@ -250,6 +250,21 @@ const toggleAccept = async (answer) => {
                             · {{ questionData.author?.reputation ?? 0 }} rep
                             · {{ formatDate(questionData.created_at) }}
                         </p>
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                            <span
+                                v-if="questionData.category"
+                                class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/70 px-3 py-1 text-slate-200"
+                            >
+                                <span class="h-1.5 w-1.5 rounded-full bg-teal-400" /> {{ questionData.category.name }}
+                            </span>
+                            <span
+                                v-for="tag in questionData.tags || []"
+                                :key="tag.id"
+                                class="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1 text-slate-200"
+                            >
+                                #{{ tag.name }}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
