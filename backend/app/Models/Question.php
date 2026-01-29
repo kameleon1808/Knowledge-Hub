@@ -39,6 +39,11 @@ class Question extends Model
         return $this->morphMany(Vote::class, 'votable');
     }
 
+    public function acceptedAnswer(): BelongsTo
+    {
+        return $this->belongsTo(Answer::class, 'accepted_answer_id');
+    }
+
     public function getScoreAttribute($value): int
     {
         if ($value !== null) {
