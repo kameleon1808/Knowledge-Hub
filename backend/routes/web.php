@@ -8,6 +8,7 @@ use App\Http\Controllers\AcceptanceController;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
@@ -51,6 +52,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::patch('/comments/{comment}', [CommentController::class, 'update']);
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
     Route::post('/questions/{question}/accept/{answer}', [AcceptanceController::class, 'store'])->name('questions.accept');
     Route::delete('/questions/{question}/accept', [AcceptanceController::class, 'destroy'])->name('questions.accept.destroy');
     Route::post('/questions/{question}/answers', [AnswerController::class, 'store'])->name('answers.store');

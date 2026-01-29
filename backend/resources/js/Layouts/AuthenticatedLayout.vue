@@ -6,6 +6,8 @@ import { Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const unreadNotifications = computed(() => page.props.notifications?.unread_count ?? 0);
+
 const roleLabels = {
     admin: 'Admin',
     moderator: 'Moderator',
@@ -62,6 +64,22 @@ const linkClass = (active) =>
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <Link
+                        :href="route('notifications.index')"
+                        class="relative inline-flex items-center justify-center rounded-full border border-slate-800 bg-slate-900/70 p-2 text-slate-200 hover:border-teal-400 hover:text-teal-100"
+                        :class="route().current('notifications.*') ? 'border-teal-400 text-teal-200' : ''"
+                        aria-label="Notifications"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.311 6.022c1.76.645 3.62 1.1 5.454 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        <span
+                            v-if="unreadNotifications"
+                            class="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white"
+                        >
+                            {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
+                        </span>
+                    </Link>
                     <span
                         class="hidden items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1 text-xs text-slate-300 md:inline-flex"
                     >

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAnswerRequest;
 use App\Models\Answer;
 use App\Models\Attachment;
 use App\Models\Question;
+use App\Notifications\AnswerPostedOnYourQuestion;
 use App\Services\AttachmentService;
 use App\Services\MarkdownService;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class AnswerController extends Controller
     {
         $this->authorize('create', [Answer::class, $question]);
 
-        DB::transaction(function () use ($request, $question): void {
+        $answer = DB::transaction(function () use ($request, $question): Answer {
             $answer = Answer::create([
                 'question_id' => $question->id,
                 'user_id' => $request->user()->id,
@@ -38,7 +39,13 @@ class AnswerController extends Controller
                 $request->file('attachments', []),
                 $request->user()
             );
+
+            return $answer;
         });
+
+        if ($question->user_id !== $request->user()->id) {
+            $question->author?->notify(new AnswerPostedOnYourQuestion($answer));
+        }
 
         return redirect()
             ->route('questions.show', $question)
