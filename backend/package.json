@@ -4,6 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "postbuild": "node scripts/cleanup-hot.js",
         "dev": "vite",
         "lint": "eslint \"resources/js/**/*.{js,vue}\"",
         "lint:fix": "eslint \"resources/js/**/*.{js,vue}\" --fix",
