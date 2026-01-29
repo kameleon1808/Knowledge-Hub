@@ -119,17 +119,22 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <InputLabel for="tags" value="Tags" />
-                        <select
-                            id="tags"
-                            v-model="form.tags"
-                            multiple
-                            class="mt-2 w-full rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-                        >
-                            <option v-for="tag in tags" :key="tag.id" :value="tag.id">
-                                {{ tag.name }}
-                            </option>
-                        </select>
+                        <InputLabel value="Tags" />
+                        <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                            <label
+                                v-for="tag in tags"
+                                :key="tag.id"
+                                class="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100"
+                            >
+                                <input
+                                    v-model="form.tags"
+                                    type="checkbox"
+                                    :value="tag.id"
+                                    class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-teal-400 focus:ring-teal-400"
+                                />
+                                <span>#{{ tag.name }}</span>
+                            </label>
+                        </div>
                         <p class="mt-1 text-xs text-slate-500">Select from existing tags (admin-managed).</p>
                         <InputError class="mt-2" :message="form.errors.tags" />
                         <InputError v-if="form.errors['tags.0']" class="mt-2" :message="form.errors['tags.0']" />

@@ -84,16 +84,28 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
+        if ($category->parent_id !== null) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'Child categories cannot be deleted directly. Move them to root or remove the parent first.');
+        }
+
         if ($category->children()->count() > 0) {
             return redirect()
                 ->route('admin.categories.index')
                 ->with('error', 'Cannot delete a category that has child categories. Move or remove children first.');
         }
 
-        DB::transaction(function () use ($category): void {
-            $category->questions()->update(['category_id' => null]);
-            $category->delete();
-        });
+        try {
+            DB::transaction(function () use ($category): void {
+                $category->questions()->update(['category_id' => null]);
+                $category->delete();
+            });
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'Category could not be deleted due to linked data. Please reassign or try again.');
+        }
 
         return redirect()
             ->route('admin.categories.index')
