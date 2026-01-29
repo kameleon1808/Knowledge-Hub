@@ -13,6 +13,10 @@ Phase D voting/accepted/reputation documentation and test plan:
 - `/docs/dev-notes-phase-d.md`
 Phase E categories/tags/filters/search documentation and test plan:
 - `/docs/phase-e-categories-tags-filters-search.md` (with `/docs/user-test-plan-phase-e.md` and `/docs/dev-notes-phase-e.md`)
+Phase F comments/bookmarks/notifications documentation and test plan:
+- `/docs/phase-f-comments-bookmarks-notifications.md`
+- `/docs/user-test-plan-phase-f.md`
+- `/docs/dev-notes-phase-f.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
