@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\AcceptanceController;
 use App\Http\Controllers\AnswerController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
@@ -42,6 +43,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('questions', QuestionController::class);
     Route::post('/votes', [VoteController::class, 'store'])->name('votes.store');
     Route::delete('/votes', [VoteController::class, 'destroy'])->name('votes.destroy');
+    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+    Route::patch('/comments/{comment}', [CommentController::class, 'update']);
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/questions/{question}/accept/{answer}', [AcceptanceController::class, 'store'])->name('questions.accept');
     Route::delete('/questions/{question}/accept', [AcceptanceController::class, 'destroy'])->name('questions.accept.destroy');
     Route::post('/questions/{question}/answers', [AnswerController::class, 'store'])->name('answers.store');

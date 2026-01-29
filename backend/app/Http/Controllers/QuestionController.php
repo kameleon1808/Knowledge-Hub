@@ -6,6 +6,7 @@ use App\Http\Requests\StoreQuestionRequest;
 use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Answer;
 use App\Models\Attachment;
+use App\Models\Comment;
 use App\Models\Category;
 use App\Models\Question;
 use App\Models\Tag;
@@ -87,6 +88,7 @@ class QuestionController extends Controller
             'category',
             'tags',
             'attachments',
+            'comments.user',
             'votes' => function ($query) use ($userId) {
                 if ($userId) {
                     $query->where('user_id', $userId);
@@ -100,6 +102,7 @@ class QuestionController extends Controller
             $query->with([
                 'author',
                 'attachments',
+                'comments.user',
                 'votes' => function ($voteQuery) use ($userId) {
                     if ($userId) {
                         $voteQuery->where('user_id', $userId);
@@ -124,6 +127,7 @@ class QuestionController extends Controller
             'current_user_vote' => $question->votes->first()?->value,
             'accepted_answer_id' => $question->accepted_answer_id,
             'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
+            'comments' => $question->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $request->user())),
             'can' => [
                 'update' => $request->user()->can('update', $question),
                 'delete' => $request->user()->can('delete', $question),
@@ -146,6 +150,7 @@ class QuestionController extends Controller
                 'current_user_vote' => $answer->votes->first()?->value,
                 'is_accepted' => $answer->id === $question->accepted_answer_id,
                 'attachments' => $answer->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
+                'comments' => $answer->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $request->user())),
                 'can' => [
                     'update' => $request->user()->can('update', $answer),
                     'delete' => $request->user()->can('delete', $answer),
@@ -159,6 +164,7 @@ class QuestionController extends Controller
             'answers' => $answers,
             'can' => [
                 'answer' => $request->user()->can('create', [Answer::class, $question]),
+                'comment' => $request->user()->can('create', Comment::class),
             ],
             'attachmentConfig' => $this->attachmentConfig(),
         ]);
@@ -240,6 +246,21 @@ class QuestionController extends Controller
             'original_name' => $attachment->original_name,
             'mime_type' => $attachment->mime_type,
             'size_bytes' => $attachment->size_bytes,
+        ];
+    }
+
+    private function commentPayload(Comment $comment, $currentUser): array
+    {
+        return [
+            'id' => $comment->id,
+            'body_html' => $comment->body_html ?: $this->markdown->toHtml($comment->body_markdown),
+            'body_markdown' => $comment->body_markdown,
+            'created_at' => $comment->created_at?->toIso8601String(),
+            'author' => $comment->user?->only(['id', 'name']),
+            'can' => [
+                'update' => $currentUser?->can('update', $comment) ?? false,
+                'delete' => $currentUser?->can('delete', $comment) ?? false,
+            ],
         ];
     }
 }
