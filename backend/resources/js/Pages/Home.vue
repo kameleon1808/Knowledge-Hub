@@ -1,6 +1,10 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+
+const page = usePage();
+const user = computed(() => page.props.auth.user);
 
 defineOptions({
     layout: AppLayout,
@@ -13,17 +17,39 @@ defineOptions({
     <section class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div class="space-y-6">
             <div class="inline-flex items-center gap-2 rounded-full border border-teal-500/40 bg-teal-500/10 px-4 py-1 text-xs uppercase tracking-[0.2em] text-teal-200">
-                Foundation Phase
+                Phase B: Auth + RBAC
             </div>
             <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
                 Knowledge Hub za Timove
                 <span class="block text-slate-400">internal Q&amp;A, learning, and shared expertise.</span>
             </h1>
             <p class="max-w-2xl text-base text-slate-300">
-                Phase A focuses on the technical foundation: a reliable Laravel 12 backend, Inertia-powered
-                Vue 3 UI, and a Dockerized stack with PostgreSQL + pgvector. Business features land in the
-                next phases.
+                Phase B introduces secure authentication, role-based access, and the admin shell while the
+                content workflows arrive in later phases.
             </p>
+            <div class="flex flex-wrap gap-3">
+                <Link
+                    v-if="!user"
+                    :href="route('login')"
+                    class="rounded-full border border-teal-400 bg-teal-400 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-300"
+                >
+                    Log in
+                </Link>
+                <Link
+                    v-if="!user"
+                    :href="route('register')"
+                    class="rounded-full border border-slate-700 bg-slate-900/70 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+                >
+                    Register
+                </Link>
+                <Link
+                    v-if="user"
+                    :href="route('dashboard')"
+                    class="rounded-full border border-slate-700 bg-slate-900/70 px-5 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+                >
+                    Go to dashboard
+                </Link>
+            </div>
             <div class="flex flex-wrap gap-4">
                 <div class="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-4">
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Status</p>
@@ -41,27 +67,27 @@ defineOptions({
         </div>
 
         <aside class="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/60 to-teal-900/30 p-8">
-            <h2 class="text-lg font-semibold">What ships in Phase A</h2>
+            <h2 class="text-lg font-semibold">What ships in Phase B</h2>
             <ul class="mt-4 space-y-3 text-sm text-slate-300">
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-teal-400"></span>
-                    Dockerized PHP-FPM, Nginx, Node, PostgreSQL with pgvector.
+                    Authentication with Inertia + Vue 3 and clean layouts.
                 </li>
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-teal-400"></span>
-                    Inertia + Vue 3 UI pipeline, Vite HMR, Tailwind styling.
+                    Role-based access control: Admin, Moderator, Član.
                 </li>
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-teal-400"></span>
-                    Quality tooling: Pint, Larastan, ESLint, Prettier, smoke tests.
+                    Admin panel skeleton with Users, Categories, and Tags sections.
                 </li>
                 <li class="flex items-start gap-3">
                     <span class="mt-1 h-2 w-2 rounded-full bg-teal-400"></span>
-                    Baseline roles + pivot migrations (no policies or features yet).
+                    User management for admins with role updates and search.
                 </li>
             </ul>
             <div class="mt-6 rounded-2xl border border-slate-700/60 bg-slate-900/60 px-5 py-4 text-sm text-slate-400">
-                Next: authentication, teams, Q&amp;A, and AI assistants.
+                Next: content workflows and moderation policies.
             </div>
         </aside>
     </section>
