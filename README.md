@@ -5,8 +5,11 @@ Knowledge Hub za Timove is an internal StackOverflow/Laracasts-inspired platform
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
 - Git
+- (Windows) PowerShell or WSL
 
 ## Setup (Docker-first)
+Project structure: the Laravel app lives in `backend/`.
+
 ```bash
 # 1) Clone and enter the repo
 # 2) Copy environment file
@@ -35,7 +38,7 @@ docker compose exec app php artisan migrate
 - App (Nginx): http://localhost:8080
 - Vite dev server: http://localhost:5173
 - PostgreSQL: localhost:5432
-The Node service runs `npm install` and starts Vite on boot.
+The Node service runs `npm install` and starts Vite on boot. If you stop the node service, run a one-time build with `make npm CMD="run build"` (or PowerShell equivalent).
 
 Common commands:
 ```bash
@@ -58,6 +61,7 @@ Edit `backend/.env` as needed. Phase A ships placeholders only.
 - `DB_*`
 - `REVERB_*`
 - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`
+Important: `DB_PASSWORD` in `backend/.env` must match the `POSTGRES_PASSWORD` value in `docker-compose.yml`.
 
 ## Database
 ```bash
@@ -65,6 +69,27 @@ make artisan CMD="migrate"
 make artisan CMD="db:seed"
 ```
 Baseline role migrations run after the default users table; the pivot depends on both.
+
+## First-run checklist (zero surprises)
+1) Docker is running and ports `8080`, `5173`, and `5432` are free.
+2) `backend/.env` exists and `APP_URL=http://localhost:8080`.
+3) `docker compose up -d --build` has started `app`, `web`, `db`, and `node`.
+4) `composer install`, `php artisan key:generate`, and `php artisan migrate` completed successfully.
+5) Open http://localhost:8080 and you should see the Home page.
+
+## Troubleshooting
+- `make` not found on Windows: use the PowerShell commands above or run in WSL.
+- `No application encryption key`: run `php artisan key:generate` inside the app container.
+- `Vite manifest not found` or blank page: ensure the `node` service is running or run `npm run build` in that container.
+- Database connection errors: wait ~10 seconds for Postgres to start, then re-run migrations.
+- Port conflicts: update ports in `docker-compose.yml` and set `APP_URL` accordingly.
+
+## Resetting the environment
+Warning: this removes database data.
+```bash
+docker compose down -v
+docker compose up -d --build
+```
 
 ## Architectural decisions
 - PostgreSQL + pgvector: chosen for future vector search/RAG capabilities.
