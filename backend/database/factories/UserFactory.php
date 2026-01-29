@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'role' => \App\Models\User::ROLE_MEMBER,
+            'reputation' => 0,
         ];
     }
 

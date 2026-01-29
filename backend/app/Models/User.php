@@ -28,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'reputation',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'reputation' => 'integer',
         ];
     }
 
@@ -99,5 +101,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class);
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    public function reputationEvents(): HasMany
+    {
+        return $this->hasMany(ReputationEvent::class);
     }
 }
