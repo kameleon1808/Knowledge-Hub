@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\Answer;
+use App\Models\Question;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,5 +24,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        Relation::morphMap([
+            'question' => Question::class,
+            'answer' => Answer::class,
+        ]);
     }
 }
