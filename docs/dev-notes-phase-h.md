@@ -2,6 +2,10 @@
 
 ## Decisions and assumptions
 
+### Mock provider
+
+For local testing and demos without an API key, set `AI_PROVIDER=mock`. The mock provider implements `LlmClient`, returns a fixed markdown draft answer, and still goes through audit logging. No key or network required.
+
 ### Provider API shapes
 
 - **OpenAI:** Implemented end-to-end using Laravel HTTP client. Endpoint: `POST https://api.openai.com/v1/chat/completions`. Request: `model`, `messages`, `temperature`, `max_tokens`. Response: `choices[0].message.content`, `usage.prompt_tokens`, `usage.completion_tokens`, `usage.total_tokens`. No assumptions beyond the public API.

@@ -19,7 +19,7 @@ Placeholders live in `backend/.env.example`. Set in `backend/.env`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AI_PROVIDER` | `openai`, `anthropic`, or `gemini` | `openai` |
+| `AI_PROVIDER` | `mock`, `openai`, `anthropic`, or `gemini` | `mock` in .env.example |
 | `AI_ENABLED` | Enable AI features | `false` |
 | `AI_AUTO_ANSWER` | Auto-run AI answer job on new question | `false` |
 | `AI_MODEL` | Override model (empty = provider default) | (empty) |
@@ -30,7 +30,9 @@ Placeholders live in `backend/.env.example`. Set in `backend/.env`:
 | `ANTHROPIC_API_KEY` | Required if `AI_PROVIDER=anthropic` | (empty) |
 | `GEMINI_API_KEY` | Required if `AI_PROVIDER=gemini` | (empty) |
 
-**Validation:** If `AI_ENABLED=true` and the selected provider has no API key, any AI call throws a clear exception and an audit log entry is created with `status=error`. The UI receives a 503 and shows the message.
+**Validation:** If `AI_ENABLED=true` and the selected provider (other than `mock`) has no API key, any AI call throws a clear exception and an audit log entry is created with `status=error`. The UI receives a 503 and shows the message.
+
+**Mock provider:** Set `AI_PROVIDER=mock` for local testing without any API key. No network calls; returns a fixed draft answer so you can test the flow, UI, and audit log. Use `openai`, `anthropic`, or `gemini` with the corresponding key for real AI.
 
 ### Config file
 

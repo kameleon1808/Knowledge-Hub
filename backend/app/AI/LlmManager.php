@@ -10,6 +10,7 @@ use App\AI\DTO\GenerateChatResult;
 use App\AI\Exceptions\NotConfigured;
 use App\AI\Providers\AnthropicClient;
 use App\AI\Providers\GeminiClient;
+use App\AI\Providers\MockClient;
 use App\AI\Providers\OpenAIClient;
 use Illuminate\Support\Facades\Config;
 
@@ -19,7 +20,9 @@ class LlmManager
         private readonly AiAuditLogger $auditLogger
     ) {
     }
+
     private const PROVIDER_MAP = [
+        'mock' => MockClient::class,
         'openai' => OpenAIClient::class,
         'anthropic' => AnthropicClient::class,
         'gemini' => GeminiClient::class,
@@ -41,6 +44,10 @@ class LlmManager
             return false;
         }
 
+        if ($provider === 'mock') {
+            return true;
+        }
+
         $key = Config::get("ai.providers.{$provider}.key");
 
         return $key !== null && $key !== '';
@@ -57,12 +64,14 @@ class LlmManager
 
         $provider = Config::get('ai.provider', 'openai');
         if (! isset(self::PROVIDER_MAP[$provider])) {
-            throw new NotConfigured("Unknown AI provider: {$provider}. Use openai, anthropic, or gemini.");
+            throw new NotConfigured("Unknown AI provider: {$provider}. Use mock, openai, anthropic, or gemini.");
         }
 
-        $key = Config::get("ai.providers.{$provider}.key");
-        if ($key === null || $key === '') {
-            throw NotConfigured::missingApiKey($provider);
+        if ($provider !== 'mock') {
+            $key = Config::get("ai.providers.{$provider}.key");
+            if ($key === null || $key === '') {
+                throw NotConfigured::missingApiKey($provider);
+            }
         }
 
         $class = self::PROVIDER_MAP[$provider];

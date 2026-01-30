@@ -17,6 +17,10 @@ return [
     'temperature' => (float) env('AI_TEMPERATURE', 0.3),
 
     'providers' => [
+        'mock' => [
+            'key' => null,
+            'default_model' => 'mock',
+        ],
         'openai' => [
             'key' => env('OPENAI_API_KEY'),
             'default_model' => 'gpt-4o-mini',
@@ -27,7 +31,7 @@ return [
         ],
         'gemini' => [
             'key' => env('GEMINI_API_KEY'),
-            'default_model' => 'gemini-1.5-flash',
+            'default_model' => 'gemini-2.5-flash',
         ],
     ],
 
