@@ -6,7 +6,9 @@
 
 - **Reverb in same container image.** The Reverb service runs `php artisan reverb:start` in a container built from the same Dockerfile as the app. No separate Reverb image; it shares app code and env. Port 8081 on the host maps to 8080 in the Reverb container so the browser can connect to Reverb from the host.
 
-- **Broadcast after commit.** `NewAnswerPosted` implements `ShouldDispatchAfterCommit` so it is broadcast only after the answer-creation transaction commits. All broadcast events (`NewAnswerPosted`, `VoteUpdated`, `NotificationCreated`) use `ShouldBroadcastNow` so they are sent immediately to Reverb without a queue worker.
+- **Broadcast after commit.** `NewAnswerPosted` implements `ShouldDispatchAfterCommit` so it is broadcast only after the answer-creation transaction commits. All broadcast events (`NewAnswerPosted`, `VoteUpdated`, `NotificationCreated`, `CommentPosted`) use `ShouldBroadcastNow` so they are sent immediately to Reverb without a queue worker.
+
+- **Comment real-time.** `CommentPosted` is dispatched when a comment is created on a question or an answer. It broadcasts on `question.{questionId}` (same channel as answers/votes), so the question show page receives it and appends the new comment to the correct list (question comments or that answer’s comments). The author does not add the comment again from the broadcast (skipped by frontend when `payload.author?.id === authUser?.id`).
 
 - **`public/hot` after node restart.** When the Vite dev server (node container) restarts, the file `public/hot` can become stale. If the frontend still references it, the page may load a blank screen. Remove it after restarting node: `docker compose exec app rm -f public/hot`, then refresh. Alternatively, run a full frontend build (`npm run build`) so the app uses the built assets instead of HMR.
 

@@ -134,6 +134,27 @@ Authorization is enforced server-side at `/broadcasting/auth`. Echo sends the ch
 }
 ```
 
+### CommentPosted
+
+- **Channel:** `private-question.{questionId}`
+- **Event name (broadcastAs):** `CommentPosted`
+- **Payload (broadcastWith):**
+
+```json
+{
+  "id": 45,
+  "body_html": "<p>...</p>",
+  "body_markdown": "...",
+  "created_at": "2026-01-30T12:00:00.000000Z",
+  "author": { "id": 2, "name": "Jane" },
+  "can": { "update": false, "delete": false },
+  "commentable_type": "answer",
+  "commentable_id": 7
+}
+```
+
+`commentable_type` is `"question"` or `"answer"`; `commentable_id` is the question or answer id so the frontend can append the comment to the correct list.
+
 ### NotificationCreated
 
 - **Channel:** `private-user.{userId}.notifications`
@@ -153,7 +174,7 @@ Authorization is enforced server-side at `/broadcasting/auth`. Echo sends the ch
 ## Frontend Echo setup
 
 - **Initialization:** `resources/js/lib/echo.js` exports `getEcho()`. It creates a single Echo instance (Reverb + Pusher protocol) using `VITE_REVERB_*` and `/broadcasting/auth` for private channels. Echo is only created when the key and host are set; guests never call `getEcho()`, so no Echo errors for unauthenticated users.
-- **Question show page:** When the user is authenticated and viewing a question, the page subscribes to `private-question.{id}` and listens for `.NewAnswerPosted` (append answer, optional “New answer” highlight) and `.VoteUpdated` (update question/answer score in place).
+- **Question show page:** When the user is authenticated and viewing a question, the page subscribes to `private-question.{id}` and listens for `.NewAnswerPosted` (append answer, optional “New answer” highlight) , `.VoteUpdated` (update question/answer score in place), and `.CommentPosted` (append new comment to question or answer comments; skipped for the current user who just posted).
 - **Header:** Authenticated layout subscribes to `private-user.{id}.notifications` and listens for `.NotificationCreated`; it updates a reactive unread count and can show a small toast.
 
 No full reload on events; only local state is updated.

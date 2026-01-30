@@ -332,6 +332,23 @@ onMounted(() => {
             if (answer) answer.score = payload.new_score;
         }
     });
+    echoChannel.listen('.CommentPosted', (payload) => {
+        if (payload.author?.id === authUser.value?.id) return;
+        if (payload.commentable_type === 'question' && questionData.value.id === payload.commentable_id) {
+            if (!questionData.value.comments) questionData.value.comments = [];
+            if (questionData.value.comments.some((c) => c.id === payload.id)) return;
+            questionData.value.comments.push(payload);
+            return;
+        }
+        if (payload.commentable_type === 'answer') {
+            const answer = answersData.value.find((a) => a.id === payload.commentable_id);
+            if (answer) {
+                if (!answer.comments) answer.comments = [];
+                if (answer.comments.some((c) => c.id === payload.id)) return;
+                answer.comments.push(payload);
+            }
+        }
+    });
 });
 
 onUnmounted(() => {
