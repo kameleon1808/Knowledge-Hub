@@ -21,6 +21,10 @@ Phase G real-time (Reverb) documentation and test plan:
 - `/docs/phase-g-realtime-reverb.md`
 - `/docs/user-test-plan-phase-g.md`
 - `/docs/dev-notes-phase-g.md`
+Phase H AI integration (provider-agnostic) and audit documentation and test plan:
+- `/docs/phase-h-ai-integration.md`
+- `/docs/user-test-plan-phase-h.md`
+- `/docs/dev-notes-phase-h.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
