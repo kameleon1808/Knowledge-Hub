@@ -1,11 +1,12 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import MarkdownEditor from '@/Components/MarkdownEditor.vue';
+import { getEcho } from '@/lib/echo.js';
 
 const props = defineProps({
     question: {
@@ -39,6 +40,7 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const questionData = ref(clone(props.question));
 const answersData = ref(props.answers.map((answer) => clone(answer)));
+const newAnswerHighlightId = ref(null);
 
 watch(
     () => props.question,
@@ -305,6 +307,55 @@ const toggleAccept = async (answer) => {
         pendingAccept.value = false;
     }
 };
+
+let echoChannel = null;
+
+onMounted(() => {
+    if (!authUser.value || !questionData.value?.id) return;
+    const echo = getEcho();
+    if (!echo) return;
+    const channelName = `question.${questionData.value.id}`;
+    echoChannel = echo.private(channelName);
+    echoChannel.listen('.NewAnswerPosted', (payload) => {
+        if (answersData.value.some((a) => a.id === payload.id)) return;
+        answersData.value.push({ ...payload, isNew: true });
+        newAnswerHighlightId.value = payload.id;
+        setTimeout(() => {
+            newAnswerHighlightId.value = null;
+        }, 3000);
+    });
+    echoChannel.listen('.VoteUpdated', (payload) => {
+        if (payload.votable_type === 'question') {
+            questionData.value.score = payload.new_score;
+        } else {
+            const answer = answersData.value.find((a) => a.id === payload.votable_id);
+            if (answer) answer.score = payload.new_score;
+        }
+    });
+    echoChannel.listen('.CommentPosted', (payload) => {
+        if (payload.author?.id === authUser.value?.id) return;
+        if (payload.commentable_type === 'question' && questionData.value.id === payload.commentable_id) {
+            if (!questionData.value.comments) questionData.value.comments = [];
+            if (questionData.value.comments.some((c) => c.id === payload.id)) return;
+            questionData.value.comments.push(payload);
+            return;
+        }
+        if (payload.commentable_type === 'answer') {
+            const answer = answersData.value.find((a) => a.id === payload.commentable_id);
+            if (answer) {
+                if (!answer.comments) answer.comments = [];
+                if (answer.comments.some((c) => c.id === payload.id)) return;
+                answer.comments.push(payload);
+            }
+        }
+    });
+});
+
+onUnmounted(() => {
+    if (questionData.value?.id && echoChannel) {
+        getEcho()?.leave(`question.${questionData.value.id}`);
+    }
+});
 </script>
 
 <template>
@@ -531,8 +582,11 @@ const toggleAccept = async (answer) => {
                     <article
                         v-for="answer in answersData"
                         :key="answer.id"
-                        class="rounded-3xl border bg-slate-950/50 p-6"
-                        :class="answer.is_accepted ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-slate-800'"
+                        class="rounded-3xl border bg-slate-950/50 p-6 transition"
+                        :class="[
+                            answer.is_accepted ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-slate-800',
+                            answer.id === newAnswerHighlightId ? 'ring-2 ring-teal-400/60' : '',
+                        ]"
                     >
                         <div class="flex items-start gap-6">
                             <div class="flex flex-col items-center gap-2 pt-1">
@@ -584,6 +638,12 @@ const toggleAccept = async (answer) => {
                                             class="rounded-full border border-emerald-400/60 bg-emerald-400/10 px-3 py-1 text-[10px] text-emerald-200"
                                         >
                                             Accepted
+                                        </span>
+                                        <span
+                                            v-if="answer.id === newAnswerHighlightId"
+                                            class="rounded-full border border-teal-400/60 bg-teal-400/10 px-3 py-1 text-[10px] text-teal-200"
+                                        >
+                                            New answer
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2">

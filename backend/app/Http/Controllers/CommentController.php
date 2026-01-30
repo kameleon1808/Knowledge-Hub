@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CommentPosted;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Answer;
@@ -24,13 +25,18 @@ class CommentController extends Controller
 
         $this->authorize('create', Comment::class);
 
-        DB::transaction(function () use ($request, $commentable): void {
-            $commentable->comments()->create([
+        $comment = null;
+        DB::transaction(function () use ($request, $commentable, &$comment): void {
+            $comment = $commentable->comments()->create([
                 'user_id' => $request->user()->id,
                 'body_markdown' => $request->string('body_markdown')->toString(),
                 'body_html' => $this->markdown->toHtml($request->string('body_markdown')->toString()),
             ]);
         });
+
+        if ($comment) {
+            event(new CommentPosted($comment));
+        }
 
         return response()->json([
             'comments' => $this->commentPayloads($commentable, $request->user()),
