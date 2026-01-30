@@ -79,3 +79,23 @@ Processing runs asynchronously via `ProcessKnowledgeItemJob`.
 - **PDF parsing** — Uses smalot/pdfparser (pure PHP). If a PDF fails, check that it is not encrypted or image-only; consider re-exporting as “text” PDF from the source.
 - **Embeddings mismatch** — Ensure `AI_EMBEDDING_DIMENSION` matches the embedding model (e.g. 1536 for text-embedding-3-small). Wrong dimension will break vector insert or search.
 - **pgvector index** — HNSW requires PostgreSQL with pgvector extension. Migrations skip vector column and index on non-PostgreSQL (e.g. SQLite) for tests.
+
+---
+
+## Dev Notes
+- **Parsing:** PDF via smalot/pdfparser; DOCX via PHPWord; TXT direct. Embedding dimension 1536 (OpenAI text-embedding-3-small); config must match provider.
+- **Embeddings:** Mock and OpenAI supported; Anthropic no embedding API; Gemini extendable. Chunking: 1000 chars, 12% overlap; no semantic splitting.
+- **Activity log:** Separate from `ai_audit_logs`; project-level events (uploads, processing, exports, RAG). AI audit mandatory for all embedding and chat.
+- **Performance:** ProcessKnowledgeItemJob queued; vector search project-scoped with HNSW; project show avoids N+1.
+
+---
+
+## User Test Plan (End-to-End)
+
+**Guest:** TC-G1–TC-G5 — No access to projects list, create, view, upload, RAG, or export (401/redirect).
+
+**Member (not owner):** TC-M1 See own projects; TC-M2 View project (tabs visible, no Edit); TC-M3/TC-M4 Cannot edit project or manage members (403); TC-M5 Upload document (Pending → Processed/Failed); TC-M6 Add email item; TC-M7 Ask RAG (citations, activity + ai_audit); TC-M8/TC-M9 Export Markdown/PDF; TC-M10 Activity tab; TC-M11 Cannot delete others’ items (403).
+
+**Owner:** Create project; edit name/description; upload document and email; ask RAG; export Markdown/PDF; view activity; delete own knowledge item; manage members (if UI).
+
+**Admin:** Access any project; same as owner; view all activity; export any project.

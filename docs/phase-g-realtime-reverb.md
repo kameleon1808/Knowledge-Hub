@@ -186,3 +186,25 @@ No full reload on events; only local state is updated.
 - **Reverb not receiving events:** Confirm `BROADCAST_CONNECTION=reverb` and that the app and Reverb share the same `REVERB_APP_*` credentials. If using a queue, run a worker so broadcast jobs are processed (or use `ShouldBroadcastNow` for synchronous broadcast).
 - **Port already in use:** Change `REVERB_SERVER_PORT` and the host mapping (e.g. `8082:8080`) and set `VITE_REVERB_PORT=8082`.
 - **Guests:** Echo is only initialized when `getEcho()` is called, and that happens only in authenticated layout and on the question page when logged in. Guests do not subscribe to private channels, so no Echo errors for them.
+
+---
+
+## Dev Notes
+- **Question channel:** private; only authenticated users; question must exist. Reverb in same container image as app; port 8081:8080.
+- **Broadcast after commit:** `NewAnswerPosted` uses `ShouldDispatchAfterCommit`; others use `ShouldBroadcastNow`. `CommentPosted` on `question.{id}`; author skips duplicate from broadcast.
+- **Notification broadcast:** only for “answer on your question”. Echo only when authenticated; unread count from server + events.
+- **Channel auth:** `question.{id}` any authenticated; `user.{userId}.notifications` only that user. No sensitive data in payloads. Phase H can add AI events on same channel model.
+
+---
+
+## User Test Plan (End-to-End)
+
+**Guest:** G1–G5 — Home/questions without Echo; no subscription; static content; no private channel; no errors.
+
+**Member:** M1 New answer without refresh (two browsers); M2 Vote score update without refresh; M3 Own vote then live update; M4 Notification badge increment; M5 Mark read, badge decreases; M6 No duplicate answer when posting; M7/M8 Vote remove/update; M9 Correct data on open; M10 Bookmarks/comments with real-time; M11 Cannot subscribe to other user’s notifications (403); M12 Badge sync after mark read.
+
+**Moderator:** MO1–MO5 — Same real-time (answer, vote, notification); dashboard then back; two browsers see same live answer.
+
+**Admin:** A1–A4 — Same real-time; admin panel then back; channel auth (A cannot receive B’s notifications).
+
+**Cross-cutting:** N1 Reconnect after network drop; N2 Reverb stop/restart; N3 Guest no Echo errors; N4 Unauthorized subscription 403; N5 Multiple tabs update.

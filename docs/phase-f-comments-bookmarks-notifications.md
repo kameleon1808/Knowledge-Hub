@@ -47,3 +47,22 @@ Phase F adds lightweight social features: markdown comments on questions/answers
 - Bookmarks and answers load counts via `withCount`; bookmark existence via `withExists` for current user.
 - Notifications paginated (15/page) and ordered unread-first then recent. Unread badge uses shared prop (single count query per request).
 - All comment/bookmark mutations return minimal JSON payloads for SPA partial updates.
+
+---
+
+## Dev Notes
+- Comments: markdown with cached `body_html`; strip HTML and unsafe links (XSS). Bookmark model with unique constraint for idempotent toggle.
+- Notifications: Laravel database channel only; mail stubbed and disabled. Unread badge from shared Inertia prop.
+- Comment policy: admin/moderator any; member own only. Comment routes return refreshed collections for SPA. Phase G can add broadcast for answers/comments/bookmark counts.
+
+---
+
+## User Test Plan (End-to-End)
+
+**Guest:** Comments read-only; no add/edit/delete; comment/bookmark submit redirect to login; `/bookmarks` and `/notifications` redirect; question with many comments renders without errors.
+
+**Member:** Add comment on question/answer; edit/delete own comment; cannot edit/delete other’s (403); empty/long body validation; toggle bookmark (index and show); `/bookmarks` list; receive notification when another user answers question (no self-answer notification); mark one/all read; unread count; comments ordered oldest→newest.
+
+**Moderator:** Edit/delete any comment; bookmark and notifications as member; mark read on other’s notification 404/403; validation as member.
+
+**Admin:** Delete any comment; create comment; bookmark toggle; notifications pagination; only database channel (no email); no N+1 on question with many comments.

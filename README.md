@@ -1,16 +1,44 @@
-# Knowledge Hub za Timove
+# Knowledge Hub for Teams
 
-Knowledge Hub za Timove is an internal StackOverflow/Laracasts-inspired platform for teams. Phases A–H are complete; Phase I adds an AI Knowledge Base (RAG), export (Markdown/PDF), activity log, and final polish. Stack: Laravel 12, Inertia + Vue 3, Tailwind, Docker, PostgreSQL + pgvector.
+**Knowledge Hub** is an internal Q&A and knowledge-base platform for teams, inspired by Stack Overflow and Laracasts. It combines a full Q&A workflow (questions, answers, voting, reputation, categories, tags, comments, bookmarks, notifications) with real-time updates, optional AI-generated answers, and an AI-powered knowledge base (RAG) over project documents and emails. All documentation is in English.
 
-Documentation in `/docs` (English):
-- **Phase B** — Auth/RBAC: `phase-b-auth-rbac.md`, `user-test-plan-phase-b.md`
-- **Phase C** — Q&A core: `phase-c-qa-core.md`, `user-test-plan-phase-c.md`, `dev-notes-phase-c.md`
-- **Phase D** — Voting/accepted/reputation: `phase-d-voting-accepted-reputation.md`, `user-test-plan-phase-d.md`, `dev-notes-phase-d.md`
-- **Phase E** — Categories/tags/filters/search: `phase-e-categories-tags-filters-search.md`, `user-test-plan-phase-e.md`, `dev-notes-phase-e.md`
-- **Phase F** — Comments/bookmarks/notifications: `phase-f-comments-bookmarks-notifications.md`, `user-test-plan-phase-f.md`, `dev-notes-phase-f.md`
-- **Phase G** — Real-time (Reverb): `phase-g-realtime-reverb.md`, `user-test-plan-phase-g.md`, `dev-notes-phase-g.md`
-- **Phase H** — AI integration (provider-agnostic, audit): `phase-h-ai-integration.md`, `user-test-plan-phase-h.md`, `dev-notes-phase-h.md`
-- **Phase I** — RAG Knowledge Base, Export, Activity log: `phase-i-rag-knowledge-base.md`, `user-test-plan-phase-i.md`, `dev-notes-phase-i.md`, `migrations-and-seeding.md`
+## What This Project Is
+
+- **Q&A core** — Members ask questions, post answers, vote, accept answers, and earn reputation. Content supports Markdown and image uploads.
+- **Taxonomy** — Admins manage categories (hierarchical) and tags; members filter and full-text search questions.
+- **Social** — Comments on questions/answers, bookmarks, and in-app notifications when someone answers your question.
+- **Real-time** — New answers, votes, and notifications appear live via Laravel Reverb (WebSockets).
+- **AI (optional)** — Provider-agnostic LLM layer: generate draft answers on questions; all calls audited. Optional auto-answer on new questions.
+- **Knowledge Base (Phase I)** — Projects group documents (PDF/DOCX/TXT) and emails. Upload or add manually; vector embeddings and RAG let you “Ask AI” with contextual answers and citations. Export to Markdown or PDF; activity log for uploads, processing, RAG, and exports.
+
+**Stack:** Laravel 12, Inertia + Vue 3, Tailwind, Docker, PostgreSQL with pgvector. Phases A–I are implemented (see below).
+
+## Documentation (`/docs`)
+
+Each phase is documented in a single file (spec, user test plan, and dev notes merged). Reference doc for migrations and assumptions:
+
+| Phase | File | Content |
+|-------|------|---------|
+| A | `phase-a-initial-setup.md` | Foundation: Laravel 12, Inertia + Vue 3 + Tailwind, Docker, Pint, test skeleton, README |
+| B | `phase-b-auth-rbac.md` | Auth, RBAC (Admin/Moderator/Member), admin skeleton, user management |
+| C | `phase-c-qa-core.md` | Q&A CRUD, Markdown, image uploads |
+| D | `phase-d-voting-accepted-reputation.md` | Voting, accepted answer, reputation |
+| E | `phase-e-categories-tags-filters-search.md` | Categories, tags, filters, full-text search |
+| F | `phase-f-comments-bookmarks-notifications.md` | Comments, bookmarks, in-app notifications |
+| G | `phase-g-realtime-reverb.md` | Real-time (Reverb): answers, votes, notifications |
+| H | `phase-h-ai-integration.md` | AI layer (OpenAI/Anthropic/Gemini), Generate AI Answer, audit |
+| I | `phase-i-rag-knowledge-base.md` | Projects, documents/emails, RAG, export, activity log |
+| — | `migrations-and-seeding.md` | Migration order, seeding, known assumptions |
+
+## Quick Start (First Time)
+
+1. **Prerequisites:** Docker (with Compose), Git. Ensure ports `8080`, `5173`, and `5432` are free.
+2. **Configure:** Copy `backend/.env.example` to `backend/.env`. Set `APP_URL=http://localhost:8080` (and optionally AI/Reverb vars; see [Environment variables](#environment-variables)).
+3. **Run:** From the repo root: `docker compose up -d --build`, then inside the app container run `composer install`, `php artisan key:generate`, `php artisan migrate`, `php artisan db:seed`, and `php artisan storage:link`.
+4. **Optional:** Start a queue worker for Phase I document processing: `docker compose exec app php artisan queue:work`. For real-time (Phase G), start Reverb: `docker compose exec app php artisan reverb:start`.
+5. **Open:** http://localhost:8080 — log in with seeded users (e.g. `admin@knowledge-hub.test` / `password`).
+
+Details and Windows/PowerShell equivalents are below.
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
@@ -87,7 +115,7 @@ Edit `backend/.env` as needed. Key variables:
 - **Database:** `DB_*` — `DB_PASSWORD` must match `POSTGRES_PASSWORD` in `docker-compose.yml`
 - **Queue:** `QUEUE_CONNECTION` — use `database` (default) or `redis`; Phase I document processing runs via queue jobs
 - **Reverb (Phase G):** `REVERB_*` for real-time broadcasting
-- **AI (Phase H / Phase I):** `AI_DRIVER` (`openai`, `anthropic`, `gemini`, or `mock`), `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`; for RAG embeddings add `AI_EMBEDDING_MODEL` and `AI_EMBEDDING_DIMENSION` (e.g. 1536 for OpenAI text-embedding-3-small). See `docs/phase-i-rag-knowledge-base.md` and `docs/phase-h-ai-integration.md`.
+- **AI (Phase H / Phase I):** `AI_PROVIDER` (`openai`, `anthropic`, `gemini`, or `mock`), `AI_ENABLED`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`; for RAG embeddings add `AI_EMBEDDING_MODEL` and `AI_EMBEDDING_DIMENSION` (e.g. 1536 for OpenAI text-embedding-3-small). See `docs/phase-h-ai-integration.md` and `docs/phase-i-rag-knowledge-base.md`.
 
 All AI calls (including RAG embeddings and chat) are audited in `ai_audit_logs`.
 

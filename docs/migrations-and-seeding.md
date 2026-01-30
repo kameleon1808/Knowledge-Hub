@@ -1,4 +1,9 @@
-# Migrations and Seeding
+# Migrations, Seeding, and Known Assumptions
+
+## Known Assumptions (Project-Wide)
+
+- **Phase B:** Roles are stored as a validated string column on `users` (no roles pivot). Admin access for `/admin/*`; moderator for `/moderator/*`. Admins do not auto-access moderator area. User deletion not implemented; only role updates. Demo credentials use password `password` (local dev only).
+- **Phases C–I:** See each phase doc for data-model and authorization assumptions.
 
 ## Migration Order
 

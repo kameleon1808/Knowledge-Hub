@@ -49,3 +49,22 @@ Phase E introduces hierarchical categories, reusable tags, richer filters, and P
 - Indexes: GIN on search vectors; indexes on `category_id`, `parent_id`, `slug`, pivot PK.
 - Query builder eager-loads author, category, tags and `answers_count` + vote sum to avoid N+1.
 - Filters/search encapsulated in `App\Queries\QuestionIndexQuery` to keep controller thin.
+
+---
+
+## Dev Notes
+- Category names globally unique; hierarchy unconstrained; delete blocked when children exist; questions decoupled on category delete.
+- Tags admin-managed only; no on-the-fly creation; delete detaches from questions. Tag filter AND semantics.
+- Answered status = `answers_count > 0`. Search: PostgreSQL `websearch_to_tsquery` + weighted vectors; SQLite fallback `LIKE`. Logic in `QuestionIndexQuery`.
+
+---
+
+## User Test Plan (End-to-End)
+
+**Guest:** View questions list (no create); open question details; admin routes 403/redirect; create question redirect to login; search from index (URL has `q`).
+
+**Member:** Create question with category and tags; edit own classification; invalid tag id validation error; filter by category, multiple tags (AND), status answered/unanswered, date preset (e.g. last 7 days), custom date range; clear all filters; full-text search returns ranked results; combined filters + search.
+
+**Moderator:** Same filters/search; edit question and change category/tags; cannot manage categories/tags in admin (403).
+
+**Admin:** Categories list, create/edit/delete (delete blocked when children); Tags list, create/edit/delete (detaches); assign category/tags on question; filters and search as above.

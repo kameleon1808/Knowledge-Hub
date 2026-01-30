@@ -144,3 +144,17 @@ The UI never crashes: all AI endpoints return JSON with a `message`; the fronten
 - **No secrets in logs:** `request_payload` and `response_payload` must never contain API keys. The logger only stores messages, model, temperature, and max_output_tokens (and raw response from the provider, which does not include keys).
 - **Access control:** Only the question author or an Admin can trigger “Generate AI Answer” (`QuestionPolicy::generateAiAnswer`). Unauthorized requests receive 403.
 - **System user:** The “AI Assistant” user is seeded with `is_system=true` and a random password; it is not used for login. Answers created by AI are attributed to this user and marked `ai_generated=true` and linked to `ai_audit_log_id`.
+
+---
+
+## Dev Notes
+- **Mock provider:** `AI_PROVIDER=mock` for local testing; no key or network; audit still logged.
+- **Provider APIs:** OpenAI/Anthropic/Gemini via HTTP; audit excludes keys. **AI Assistant:** Seeded `is_system=true`; idempotency: manual = new answer each time; auto job = at most one per question. **Phase I:** LlmClient/ChatRequest/ChatResponse reusable for RAG.
+
+---
+
+## User Test Plan (End-to-End)
+**Guest:** No Generate AI button; POST ai-answer 401; view question with AI answer; no audit access.
+**Member:** Owner sees button and can generate; non-owner no button/403; disabled/key missing 422/503; normal answer and vote; AI badge; second AI allowed; real-time update.
+**Moderator:** No button for others; normal use; see AI answers; POST ai-answer 403.
+**Admin:** Button on any question; generate for any; errors when disabled/key missing; delete AI answer; audit success/error; auto-answer off/on + idempotent; regression.

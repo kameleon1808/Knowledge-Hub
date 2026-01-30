@@ -90,3 +90,24 @@ All routes require authentication.
 - **403 on actions**: verify the user role and ownership; policies block unauthorized edits/deletes.
 - **Upload failures**: check `ATTACHMENTS_MAX_SIZE_KB` and file types; confirm `public` disk permissions.
 - **Missing markdown output**: ensure migrations ran and `body_html` is populated on create/update.
+
+---
+
+## Dev Notes
+- **Markdown rendering**: Server-side with `league/commonmark` using `html_input=strip` and `allow_unsafe_links=false`. Client preview uses `marked` + `DOMPurify`.
+- **Attachments**: Centralized in `AttachmentService`; create/update/delete wrapped in DB transactions. Cached `body_html` stored for faster reads.
+- **Assumptions**: `storage:link` required; only images accepted; user roles from Phase B seeders.
+
+---
+
+## User Test Plan (End-to-End)
+
+Scope: Q&A CRUD, Markdown preview, image uploads, RBAC.
+
+**Guest:** G1–G5 — Access to `/questions`, question detail, create, answer, edit blocked; redirect to login.
+
+**Member:** M1 Create question; M2 Markdown preview; M3 Upload images on question; M4 Edit question with image removal; M5 Unauthorized edit/delete other’s question (403); M6 Post answer; M7 Unauthorized edit/delete other’s answer (403); M8 Validation empty title/body; M9 Validation invalid upload type (e.g. PDF rejected).
+
+**Moderator:** MOD1 Edit any question; MOD2 Delete any question; MOD3 Edit any answer; MOD4 Delete any answer; MOD5 Upload images while editing.
+
+**Admin:** A1 Create question and answer; A2 Edit/delete any question; A3 Edit/delete any answer; A4 Upload over size limit rejected; A5 Images load from `/storage/...`.

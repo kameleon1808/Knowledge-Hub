@@ -80,3 +80,23 @@ All routes require authentication.
 - Scores are aggregated via `withSum` (`votes as score`) to avoid N+1 queries.
 - Current user vote state is eager-loaded with constrained `votes` relation.
 - Indexes support vote lookups and reputation auditing queries.
+
+---
+
+## Dev Notes
+- Accepted answer on `questions.accepted_answer_id`; only question author can accept/unaccept (strict).
+- Users cannot vote on own content. Polymorphic votes via morph map (`question`, `answer`).
+- Reputation: append-only `reputation_events` with composite unique key for idempotency; vote/accept in transactions with row locks.
+- Later: Phase E can add vote scores to search; Phase G can broadcast vote/accept via Reverb; moderation can add audit views.
+
+---
+
+## User Test Plan (End-to-End)
+
+**Guest:** G-01–G-05 — `/questions` and profile require auth; vote/accept endpoints 302/401; invalid vote type 422.
+
+**Member:** M-01 Upvote question (+1 score, author +5 rep); M-02 Downvote question (-2 rep); M-03 Remove vote (neutral); M-04/M-05 Switch vote up↔down; M-06/M-07 Upvote/downvote answer (+10/-2 rep); M-08 Cannot vote on own post (403); M-09 Accept answer (author only, +15 rep); M-10 Unaccept; M-11 Switch accepted answer; M-12 Non-author cannot accept (403); M-13 Reputation next to posts; M-14 Reputation on profile; M-15/M-16 Invalid vote payload/type 422; M-17 Double vote idempotent (single upvote).
+
+**Moderator:** MOD-01 Vote as normal; MOD-02 Cannot accept others’ questions (403); MOD-03/MOD-04 Switch/remove vote.
+
+**Admin:** A-01 Vote as normal; A-02 Cannot accept others’ questions (403); A-03 Accept on own question; A-04 DELETE /votes removes vote and rolls back reputation.
