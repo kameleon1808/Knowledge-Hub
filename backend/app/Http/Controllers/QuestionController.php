@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreQuestionRequest;
 use App\Http\Requests\UpdateQuestionRequest;
+use App\Jobs\GenerateAiAnswerForQuestion;
 use App\Models\Answer;
 use App\Models\Attachment;
 use App\Models\Comment;
@@ -14,6 +15,7 @@ use App\Queries\QuestionIndexQuery;
 use App\Services\AttachmentService;
 use App\Services\MarkdownService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -73,6 +75,10 @@ class QuestionController extends Controller
 
             return $question;
         });
+
+        if (Config::get('ai.enabled') && Config::get('ai.auto_answer')) {
+            GenerateAiAnswerForQuestion::dispatch($question);
+        }
 
         return redirect()
             ->route('questions.show', $question)
@@ -142,6 +148,7 @@ class QuestionController extends Controller
                 'delete' => $request->user()->can('delete', $question),
                 'vote' => $request->user()->can('vote', $question),
                 'accept' => $request->user()->can('accept', $question),
+                'generate_ai_answer' => $request->user()->can('generateAiAnswer', $question),
             ],
         ];
 
@@ -158,6 +165,7 @@ class QuestionController extends Controller
                 'score' => $answer->score,
                 'current_user_vote' => $answer->votes->first()?->value,
                 'is_accepted' => $answer->id === $question->accepted_answer_id,
+                'ai_generated' => (bool) $answer->ai_generated,
                 'attachments' => $answer->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
                 'comments' => $answer->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $request->user())),
                 'can' => [

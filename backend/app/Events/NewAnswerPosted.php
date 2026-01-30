@@ -56,6 +56,7 @@ class NewAnswerPosted implements ShouldBroadcastNow, ShouldDispatchAfterCommit
             ],
             'score' => $score,
             'is_accepted' => false,
+            'ai_generated' => (bool) $this->answer->ai_generated,
             'attachments' => $attachments,
             'comments' => [],
             'can' => [
