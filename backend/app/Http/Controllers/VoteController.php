@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\VoteUpdated;
 use App\Http\Requests\DeleteVoteRequest;
 use App\Http\Requests\StoreVoteRequest;
 use App\Models\Answer;
@@ -28,7 +29,10 @@ class VoteController extends Controller
 
         $currentVote = $this->votes->castVote($request->user(), $votable, $request->integer('value'));
 
-        return $this->voteResponse($votable, $currentVote);
+        $response = $this->voteResponse($votable, $currentVote);
+        $this->broadcastVoteUpdated($votable, (int) $response->getData(true)['score']);
+
+        return $response;
     }
 
     public function destroy(DeleteVoteRequest $request): JsonResponse
@@ -42,7 +46,10 @@ class VoteController extends Controller
 
         $this->votes->removeVote($request->user(), $votable);
 
-        return $this->voteResponse($votable, null);
+        $response = $this->voteResponse($votable, null);
+        $this->broadcastVoteUpdated($votable, (int) $response->getData(true)['score']);
+
+        return $response;
     }
 
     private function resolveVotable(string $type, int $id): Model
@@ -68,5 +75,19 @@ class VoteController extends Controller
             'current_user_vote' => $currentVote,
             'reputation' => $author ? [$author->id => $author->reputation] : [],
         ]);
+    }
+
+    private function broadcastVoteUpdated(Model $votable, int $newScore): void
+    {
+        $questionId = $votable instanceof Question
+            ? $votable->getKey()
+            : $votable->question_id;
+
+        broadcast(new VoteUpdated(
+            $questionId,
+            $votable->getMorphClass(),
+            (int) $votable->getKey(),
+            $newScore
+        ));
     }
 }

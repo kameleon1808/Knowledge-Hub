@@ -17,6 +17,10 @@ Phase F comments/bookmarks/notifications documentation and test plan:
 - `/docs/phase-f-comments-bookmarks-notifications.md`
 - `/docs/user-test-plan-phase-f.md`
 - `/docs/dev-notes-phase-f.md`
+Phase G real-time (Reverb) documentation and test plan:
+- `/docs/phase-g-realtime-reverb.md`
+- `/docs/user-test-plan-phase-g.md`
+- `/docs/dev-notes-phase-g.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose

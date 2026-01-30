@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewAnswerPosted;
+use App\Events\NotificationCreated;
 use App\Http\Requests\StoreAnswerRequest;
 use App\Http\Requests\UpdateAnswerRequest;
 use App\Models\Answer;
@@ -44,8 +46,24 @@ class AnswerController extends Controller
         });
 
         if ($question->user_id !== $request->user()->id) {
-            $question->author?->notify(new AnswerPostedOnYourQuestion($answer));
+            $notifiable = $question->author;
+            $notifiable?->notify(new AnswerPostedOnYourQuestion($answer));
+            if ($notifiable) {
+                $latest = $notifiable->notifications()->first();
+                if ($latest) {
+                    broadcast(new NotificationCreated(
+                        $notifiable->id,
+                        (string) $latest->id,
+                        $latest->type,
+                        $latest->data ?? [],
+                        $latest->created_at->toIso8601String(),
+                        $notifiable->unreadNotifications()->count()
+                    ));
+                }
+            }
         }
+
+        NewAnswerPosted::dispatch($answer);
 
         return redirect()
             ->route('questions.show', $question)

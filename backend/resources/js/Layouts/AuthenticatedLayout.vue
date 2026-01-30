@@ -1,12 +1,40 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { getEcho } from '@/lib/echo.js';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-const unreadNotifications = computed(() => page.props.notifications?.unread_count ?? 0);
+const unreadCountFromServer = computed(() => page.props.notifications?.unread_count ?? 0);
+const unreadNotifications = ref(unreadCountFromServer.value);
+
+watch(unreadCountFromServer, (val) => {
+    unreadNotifications.value = val;
+});
+
+const channelName = computed(() =>
+    user.value?.id ? `user.${user.value.id}.notifications` : null
+);
+
+let echoChannel = null;
+
+onMounted(() => {
+    unreadNotifications.value = unreadCountFromServer.value;
+    const echo = user.value?.id ? getEcho() : null;
+    if (!echo || !channelName.value) return;
+    echoChannel = echo.private(channelName.value);
+    echoChannel.listen('.NotificationCreated', (payload) => {
+        unreadNotifications.value = payload.unread_count ?? unreadNotifications.value + 1;
+    });
+});
+
+onUnmounted(() => {
+    if (channelName.value && echoChannel) {
+        getEcho()?.leave(channelName.value);
+    }
+});
 
 const roleLabels = {
     admin: 'Admin',
