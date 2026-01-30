@@ -75,6 +75,9 @@ const linkClass = (active) =>
                         <Link :href="route('questions.index')" :class="linkClass(route().current('questions.*'))">
                             Questions
                         </Link>
+                        <Link :href="route('projects.index')" :class="linkClass(route().current('projects.*'))">
+                            Projects
+                        </Link>
                         <Link :href="route('bookmarks.index')" :class="linkClass(route().current('bookmarks.index'))">
                             My Bookmarks
                         </Link>
@@ -144,6 +147,7 @@ const linkClass = (active) =>
                                 <div class="text-slate-400">{{ user?.email }}</div>
                             </div>
                             <DropdownLink :href="route('profile.show')">Profile</DropdownLink>
+                            <DropdownLink :href="route('projects.index')">Projects</DropdownLink>
                             <DropdownLink v-if="isAdmin" :href="route('admin.dashboard')">Admin Panel</DropdownLink>
                             <DropdownLink v-if="isModerator" :href="route('moderator.dashboard')">Moderator Area</DropdownLink>
                             <DropdownLink :href="route('logout')" method="post" as="button">

@@ -1,30 +1,16 @@
 # Knowledge Hub za Timove
 
-Knowledge Hub za Timove is an internal StackOverflow/Laracasts-inspired platform for teams. Phase A delivers the production-ready foundation: Laravel 12, Inertia + Vue 3 UI, Tailwind styling, and a Dockerized environment with PostgreSQL + pgvector.
+Knowledge Hub za Timove is an internal StackOverflow/Laracasts-inspired platform for teams. Phases A–H are complete; Phase I adds an AI Knowledge Base (RAG), export (Markdown/PDF), activity log, and final polish. Stack: Laravel 12, Inertia + Vue 3, Tailwind, Docker, PostgreSQL + pgvector.
 
-Phase B authentication/RBAC details and demo credentials are documented in `/docs`.
-Phase C Q&A core documentation and test plan:
-- `/docs/phase-c-qa-core.md`
-- `/docs/user-test-plan-phase-c.md`
-- `/docs/dev-notes-phase-c.md`
-Phase D voting/accepted/reputation documentation and test plan:
-- `/docs/phase-d-voting-accepted-reputation.md`
-- `/docs/user-test-plan-phase-d.md`
-- `/docs/dev-notes-phase-d.md`
-Phase E categories/tags/filters/search documentation and test plan:
-- `/docs/phase-e-categories-tags-filters-search.md` (with `/docs/user-test-plan-phase-e.md` and `/docs/dev-notes-phase-e.md`)
-Phase F comments/bookmarks/notifications documentation and test plan:
-- `/docs/phase-f-comments-bookmarks-notifications.md`
-- `/docs/user-test-plan-phase-f.md`
-- `/docs/dev-notes-phase-f.md`
-Phase G real-time (Reverb) documentation and test plan:
-- `/docs/phase-g-realtime-reverb.md`
-- `/docs/user-test-plan-phase-g.md`
-- `/docs/dev-notes-phase-g.md`
-Phase H AI integration (provider-agnostic) and audit documentation and test plan:
-- `/docs/phase-h-ai-integration.md`
-- `/docs/user-test-plan-phase-h.md`
-- `/docs/dev-notes-phase-h.md`
+Documentation in `/docs` (English):
+- **Phase B** — Auth/RBAC: `phase-b-auth-rbac.md`, `user-test-plan-phase-b.md`
+- **Phase C** — Q&A core: `phase-c-qa-core.md`, `user-test-plan-phase-c.md`, `dev-notes-phase-c.md`
+- **Phase D** — Voting/accepted/reputation: `phase-d-voting-accepted-reputation.md`, `user-test-plan-phase-d.md`, `dev-notes-phase-d.md`
+- **Phase E** — Categories/tags/filters/search: `phase-e-categories-tags-filters-search.md`, `user-test-plan-phase-e.md`, `dev-notes-phase-e.md`
+- **Phase F** — Comments/bookmarks/notifications: `phase-f-comments-bookmarks-notifications.md`, `user-test-plan-phase-f.md`, `dev-notes-phase-f.md`
+- **Phase G** — Real-time (Reverb): `phase-g-realtime-reverb.md`, `user-test-plan-phase-g.md`, `dev-notes-phase-g.md`
+- **Phase H** — AI integration (provider-agnostic, audit): `phase-h-ai-integration.md`, `user-test-plan-phase-h.md`, `dev-notes-phase-h.md`
+- **Phase I** — RAG Knowledge Base, Export, Activity log: `phase-i-rag-knowledge-base.md`, `user-test-plan-phase-i.md`, `dev-notes-phase-i.md`, `migrations-and-seeding.md`
 
 ## Requirements
 - Docker Desktop (or Docker Engine) with Compose
@@ -45,9 +31,17 @@ make up
 # 4) Install PHP dependencies
 make composer CMD="install"
 
-# 5) Generate app key and run migrations
+# 5) Generate app key, run migrations, and seed
 make artisan CMD="key:generate"
 make artisan CMD="migrate"
+make artisan CMD="db:seed"
+make artisan CMD="storage:link"
+
+# 6) (Optional) Run queue worker for knowledge processing and Reverb for real-time
+# In separate terminals:
+make queue
+# and optionally:
+make reverb
 ```
 On Windows PowerShell (without `make`), use:
 ```powershell
@@ -56,6 +50,12 @@ docker compose up -d --build
 docker compose exec app composer install
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
+docker compose exec app php artisan db:seed
+docker compose exec app php artisan storage:link
+# Queue worker (for Phase I document processing):
+docker compose exec app php artisan queue:work
+# Reverb (optional, for Phase G real-time):
+docker compose exec app php artisan reverb:start
 ```
 
 ## Running with Docker
@@ -79,27 +79,38 @@ docker compose exec app php artisan test
 docker compose exec node npm run build
 ```
 
-## Environment variables (placeholders)
-Edit `backend/.env` as needed. Phase A ships placeholders only.
-- `APP_URL`
-- `DB_*`
-- `REVERB_*`
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`
-Important: `DB_PASSWORD` in `backend/.env` must match the `POSTGRES_PASSWORD` value in `docker-compose.yml`.
+## Environment variables
+
+Edit `backend/.env` as needed. Key variables:
+
+- **App:** `APP_URL` (e.g. `http://localhost:8080`)
+- **Database:** `DB_*` — `DB_PASSWORD` must match `POSTGRES_PASSWORD` in `docker-compose.yml`
+- **Queue:** `QUEUE_CONNECTION` — use `database` (default) or `redis`; Phase I document processing runs via queue jobs
+- **Reverb (Phase G):** `REVERB_*` for real-time broadcasting
+- **AI (Phase H / Phase I):** `AI_DRIVER` (`openai`, `anthropic`, `gemini`, or `mock`), `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`; for RAG embeddings add `AI_EMBEDDING_MODEL` and `AI_EMBEDDING_DIMENSION` (e.g. 1536 for OpenAI text-embedding-3-small). See `docs/phase-i-rag-knowledge-base.md` and `docs/phase-h-ai-integration.md`.
+
+All AI calls (including RAG embeddings and chat) are audited in `ai_audit_logs`.
 
 ## Database
+
+Migrations run in filename order. Phase I adds projects, knowledge_items, knowledge_chunks (with pgvector), rag_queries, and activity_logs. See `docs/migrations-and-seeding.md` for full order and reseed instructions.
+
 ```bash
 make artisan CMD="migrate"
 make artisan CMD="db:seed"
+# Or reset and reseed:
+make artisan CMD="migrate:fresh"
+make artisan CMD="db:seed"
+make artisan CMD="storage:link"
 ```
-Baseline role migrations run after the default users table; the pivot depends on both.
 
 ## First-run checklist (zero surprises)
 1) Docker is running and ports `8080`, `5173`, and `5432` are free.
 2) `backend/.env` exists and `APP_URL=http://localhost:8080`.
 3) `docker compose up -d --build` has started `app`, `web`, `db`, and `node`.
-4) `composer install`, `php artisan key:generate`, and `php artisan migrate` completed successfully.
-5) Open http://localhost:8080 and you should see the Home page.
+4) `composer install`, `php artisan key:generate`, `php artisan migrate`, and `php artisan db:seed` completed successfully; run `php artisan storage:link` for Phase I exports.
+5) For Phase I document processing, run a queue worker: `php artisan queue:work` (or `make queue`).
+6) Open http://localhost:8080 and you should see the Home page; log in and visit Projects for Phase I RAG.
 
 ## Troubleshooting
 - `make` not found on Windows: use the PowerShell commands above or run in WSL.
@@ -136,11 +147,18 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-## Architectural decisions
-- PostgreSQL + pgvector: chosen for future vector search/RAG capabilities.
-- Inertia + Vue 3: keeps a modern SPA-like UI without abandoning Laravel routing or server-side conventions.
+## Phase I: RAG Knowledge Base
 
-## Known limitations (Phase A)
-- No business features yet (no Q&A, voting, or AI logic).
-- No authentication or authorization policies.
-- Minimal UI, focused only on proving the stack end-to-end.
+- **Projects** — Group documents and emails; members can view/search and ask questions; owners can manage settings and members.
+- **Knowledge ingestion** — Upload PDF/DOCX/TXT (stored privately, processed via queue); add emails manually (subject, from, body).
+- **RAG** — Ask AI tab: question is embedded, vector search returns relevant chunks, LLM answers from context with citations. All embedding and chat calls are audited in `ai_audit_logs`.
+- **Export** — Exports tab: download project knowledge as Markdown or PDF.
+- **Activity** — Activity tab: recent events (uploads, processing, RAG asks, exports).
+
+Ensure a queue worker is running for document processing (`php artisan queue:work`). AI and embedding configuration: see `docs/phase-i-rag-knowledge-base.md`.
+
+## Architectural decisions
+
+- PostgreSQL + pgvector: used for vector embeddings and similarity search in Phase I RAG.
+- Inertia + Vue 3: SPA-like UI with Laravel routing and server-side conventions.
+- AI layer (Phase H) is provider-agnostic; all AI usage (including RAG) is logged in `ai_audit_logs`.

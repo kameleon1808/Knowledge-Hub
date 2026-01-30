@@ -33,13 +33,23 @@ class LlmManager
         return (bool) Config::get('ai.enabled');
     }
 
+    private static function currentProvider(): string
+    {
+        $provider = env('AI_PROVIDER');
+        if ($provider !== null && $provider !== '') {
+            return $provider;
+        }
+
+        return (string) Config::get('ai.provider', 'openai');
+    }
+
     public function isConfigured(): bool
     {
         if (! $this->isEnabled()) {
             return false;
         }
 
-        $provider = Config::get('ai.provider', 'openai');
+        $provider = self::currentProvider();
         if (! isset(self::PROVIDER_MAP[$provider])) {
             return false;
         }
@@ -62,7 +72,7 @@ class LlmManager
             throw NotConfigured::aiDisabled();
         }
 
-        $provider = Config::get('ai.provider', 'openai');
+        $provider = self::currentProvider();
         if (! isset(self::PROVIDER_MAP[$provider])) {
             throw new NotConfigured("Unknown AI provider: {$provider}. Use mock, openai, anthropic, or gemini.");
         }
@@ -105,12 +115,12 @@ class LlmManager
 
     public function providerName(): string
     {
-        return (string) Config::get('ai.provider', 'openai');
+        return self::currentProvider();
     }
 
     public function defaultModel(): string
     {
-        $provider = Config::get('ai.provider', 'openai');
+        $provider = self::currentProvider();
         $model = Config::get('ai.model');
         if ($model !== null && $model !== '') {
             return $model;

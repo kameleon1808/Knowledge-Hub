@@ -10,6 +10,10 @@ use App\Models\User;
 use App\Models\Comment;
 use App\Models\Bookmark;
 use App\Models\Vote;
+use App\Models\Project;
+use App\Models\KnowledgeItem;
+use App\Models\RagQuery;
+use App\Services\ActivityLogger;
 use App\Notifications\AnswerPostedOnYourQuestion;
 use App\Services\AcceptanceService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -285,6 +289,76 @@ class DatabaseSeeder extends Seeder
                 ]);
             });
         }
+
+        $this->seedPhaseIProjects($seededUsers);
+    }
+
+    private function seedPhaseIProjects(array $seededUsers): void
+    {
+        if (! class_exists(Project::class)) {
+            return;
+        }
+
+        $admin = $seededUsers[User::ROLE_ADMIN];
+        $member = $seededUsers[User::ROLE_MEMBER];
+
+        $project = Project::updateOrCreate(
+            ['owner_user_id' => $admin->id, 'name' => 'Demo Knowledge Base'],
+            [
+                'description' => 'Sample project for Phase I RAG and exports.',
+            ]
+        );
+        $project->users()->syncWithoutDetaching([$admin->id => ['role' => Project::ROLE_OWNER]]);
+        $project->users()->syncWithoutDetaching([$member->id => ['role' => Project::ROLE_MEMBER]]);
+
+        $logger = app(ActivityLogger::class);
+        $logger->log(ActivityLogger::ACTION_PROJECT_CREATED, $project, $admin, Project::class, $project->id, ['name' => $project->name]);
+
+        $welcomeEmail = KnowledgeItem::updateOrCreate(
+            [
+                'project_id' => $project->id,
+                'type' => KnowledgeItem::TYPE_EMAIL,
+                'title' => 'Welcome email',
+            ],
+            [
+                'source_meta' => ['from' => 'team@example.com', 'sent_at' => null],
+                'original_content_path' => null,
+                'raw_text' => "This is sample content for the demo knowledge base. It can be used to test RAG: ask questions about the welcome process or team contact.",
+                'status' => KnowledgeItem::STATUS_PENDING,
+                'error_message' => null,
+            ]
+        );
+        $logger->log(ActivityLogger::ACTION_KNOWLEDGE_ITEM_UPLOADED, $project, $admin, KnowledgeItem::class, $welcomeEmail->id, ['title' => $welcomeEmail->title, 'type' => 'email']);
+
+        KnowledgeItem::updateOrCreate(
+            [
+                'project_id' => $project->id,
+                'type' => KnowledgeItem::TYPE_EMAIL,
+                'title' => 'Release notes',
+            ],
+            [
+                'source_meta' => ['from' => 'releases@example.com', 'sent_at' => null],
+                'original_content_path' => null,
+                'raw_text' => "Release 1.0 includes the knowledge base, RAG Ask AI, and export to Markdown and PDF. Process documents (PDF, DOCX, TXT) or add emails to build the project knowledge.",
+                'status' => KnowledgeItem::STATUS_PENDING,
+                'error_message' => null,
+            ]
+        );
+
+        $ragQuery = RagQuery::updateOrCreate(
+            [
+                'project_id' => $project->id,
+                'user_id' => $admin->id,
+                'question_text' => 'What is this project about?',
+            ],
+            [
+                'answer_text' => 'This is a demo project for the knowledge base and RAG features.',
+                'cited_chunk_ids' => [],
+                'provider' => 'mock',
+                'model' => 'mock',
+            ]
+        );
+        $logger->log(ActivityLogger::ACTION_RAG_ASKED, $project, $admin, RagQuery::class, $ragQuery->id, ['question_preview' => 'What is this project about?']);
     }
 
     private function ensureVote(VoteService $voteService, User $voter, $votable, int $value): void

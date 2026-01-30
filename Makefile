@@ -1,4 +1,4 @@
-.PHONY: up down restart build logs shell artisan composer npm test
+.PHONY: up down restart build logs shell artisan composer npm test queue reverb
 
 CMD ?=
 
@@ -32,3 +32,9 @@ npm:
 
 test:
 	docker compose exec app php artisan test
+
+queue:
+	docker compose exec app php artisan queue:work
+
+reverb:
+	docker compose exec app php artisan reverb:start

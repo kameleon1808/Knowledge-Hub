@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Bookmark;
 use App\Models\Comment;
+use App\Models\Project;
 use App\Models\Question;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -134,6 +135,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function reputationEvents(): HasMany
     {
         return $this->hasMany(ReputationEvent::class);
+    }
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_user')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     public function isSystem(): bool

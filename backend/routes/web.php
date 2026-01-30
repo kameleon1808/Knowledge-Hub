@@ -12,6 +12,10 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Moderator\DashboardController as ModeratorDashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectExportController;
+use App\Http\Controllers\ProjectKnowledgeController;
+use App\Http\Controllers\ProjectRagController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\VoteController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +47,17 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::resource('projects', ProjectController::class);
+    Route::post('projects/{project}/knowledge-items', [ProjectKnowledgeController::class, 'storeDocument'])
+        ->name('projects.knowledge-items.store');
+    Route::post('projects/{project}/knowledge-emails', [ProjectKnowledgeController::class, 'storeEmail'])
+        ->name('projects.knowledge-emails.store');
+    Route::post('projects/{project}/rag-ask', [ProjectRagController::class, 'ask'])->name('projects.rag-ask');
+    Route::get('projects/{project}/export/markdown', [ProjectExportController::class, 'markdown'])->name('projects.export.markdown');
+    Route::get('projects/{project}/export/pdf', [ProjectExportController::class, 'pdf'])->name('projects.export.pdf');
+    Route::get('projects/{project}/members/search', [ProjectController::class, 'searchMembers'])->name('projects.members.search');
+    Route::post('projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.store');
+    Route::delete('projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.members.destroy');
     Route::resource('questions', QuestionController::class);
     Route::post('/votes', [VoteController::class, 'store'])->name('votes.store');
     Route::delete('/votes', [VoteController::class, 'destroy'])->name('votes.destroy');

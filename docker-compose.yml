@@ -13,6 +13,22 @@ services:
         networks:
             - knowledge-hub
 
+    queue:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        volumes:
+            - ./backend:/var/www/html
+        command: php artisan queue:work --sleep=3 --tries=3
+        depends_on:
+            - app
+            - db
+        environment:
+            APP_ENV: local
+            APP_DEBUG: 'true'
+        networks:
+            - knowledge-hub
+
     reverb:
         build:
             context: .

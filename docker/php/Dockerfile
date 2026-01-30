@@ -8,9 +8,13 @@ RUN apt-get update \
         libpq-dev \
         libzip-dev \
         libicu-dev \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
         zip \
         unzip \
-    && docker-php-ext-install pdo_pgsql zip intl opcache \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql zip intl opcache gd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
