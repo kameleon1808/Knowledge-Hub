@@ -22,6 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
     public const ROLE_MODERATOR = 'moderator';
     public const ROLE_MEMBER = 'member';
 
+    public const AI_ASSISTANT_EMAIL = 'ai-assistant@system.knowledge-hub.test';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -33,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'reputation',
+        'is_system',
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'reputation' => 'integer',
+            'is_system' => 'boolean',
         ];
     }
 
@@ -130,5 +134,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public function reputationEvents(): HasMany
     {
         return $this->hasMany(ReputationEvent::class);
+    }
+
+    public function isSystem(): bool
+    {
+        return (bool) $this->is_system;
+    }
+
+    public static function aiAssistant(): ?User
+    {
+        return self::query()
+            ->where('email', self::AI_ASSISTANT_EMAIL)
+            ->where('is_system', true)
+            ->first();
     }
 }

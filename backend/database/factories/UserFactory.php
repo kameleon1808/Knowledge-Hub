@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'role' => \App\Models\User::ROLE_MEMBER,
             'reputation' => 0,
+            'is_system' => false,
         ];
     }
 

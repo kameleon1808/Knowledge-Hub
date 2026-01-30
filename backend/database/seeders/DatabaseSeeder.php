@@ -64,6 +64,18 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        $aiAssistant = User::updateOrCreate(
+            ['email' => User::AI_ASSISTANT_EMAIL],
+            [
+                'name' => 'AI Assistant',
+                'role' => User::ROLE_MEMBER,
+                'is_system' => true,
+                'password' => Hash::make(Str::random(64)),
+                'email_verified_at' => now(),
+            ]
+        );
+        $seededUsers['ai_assistant'] = $aiAssistant;
+
         $categories = [
             [
                 'name' => 'Processes',

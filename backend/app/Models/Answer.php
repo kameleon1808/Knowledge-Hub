@@ -17,7 +17,16 @@ class Answer extends Model
         'user_id',
         'body_markdown',
         'body_html',
+        'ai_generated',
+        'ai_audit_log_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ai_generated' => 'boolean',
+        ];
+    }
 
     public function question(): BelongsTo
     {
@@ -27,6 +36,11 @@ class Answer extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function aiAuditLog(): BelongsTo
+    {
+        return $this->belongsTo(AiAuditLog::class, 'ai_audit_log_id');
     }
 
     public function attachments(): MorphMany
