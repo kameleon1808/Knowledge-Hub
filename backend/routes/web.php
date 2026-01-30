@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\AcceptanceController;
+use App\Http\Controllers\AiAnswerController;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\BookmarkController;
@@ -58,6 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
     Route::post('/questions/{question}/accept/{answer}', [AcceptanceController::class, 'store'])->name('questions.accept');
     Route::delete('/questions/{question}/accept', [AcceptanceController::class, 'destroy'])->name('questions.accept.destroy');
+    Route::post('/questions/{question}/ai-answer', [AiAnswerController::class, 'store'])->name('questions.ai-answer');
     Route::post('/questions/{question}/answers', [AnswerController::class, 'store'])->name('answers.store');
     Route::get('/answers/{answer}/edit', [AnswerController::class, 'edit'])->name('answers.edit');
     Route::put('/answers/{answer}', [AnswerController::class, 'update'])->name('answers.update');

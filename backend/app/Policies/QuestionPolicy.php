@@ -46,4 +46,9 @@ class QuestionPolicy
     {
         return $question->user_id === $user->id;
     }
+
+    public function generateAiAnswer(User $user, Question $question): bool
+    {
+        return $user->isAdmin() || $question->user_id === $user->id;
+    }
 }
