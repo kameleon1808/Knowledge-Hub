@@ -187,16 +187,6 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-## Phase I: RAG Knowledge Base
-
-- **Projects** — Group documents and emails; members can view/search and ask questions; owners can manage settings and members.
-- **Knowledge ingestion** — Upload PDF/DOCX/TXT (stored privately, processed via queue); add emails manually (subject, from, body).
-- **RAG** — Ask AI tab: question is embedded, vector search returns relevant chunks, LLM answers from context with citations. All embedding and chat calls are audited in `ai_audit_logs`.
-- **Export** — Exports tab: download project knowledge as Markdown or PDF.
-- **Activity** — Activity tab: recent events (uploads, processing, RAG asks, exports).
-
-Ensure a queue worker is running for document processing (`php artisan queue:work`). AI and embedding configuration: see `docs/phase-i-rag-knowledge-base.md`.
-
 ## Architectural decisions
 
 - PostgreSQL + pgvector: used for vector embeddings and similarity search in Phase I RAG.
