@@ -140,6 +140,18 @@ make artisan CMD="storage:link"
 5) For Phase I document processing, run a queue worker: `php artisan queue:work` (or `make queue`).
 6) Open http://localhost:8080 and you should see the Home page; log in and visit Projects for Phase I RAG.
 
+## Vite hot file fail-safe
+
+After deploy or larger changes, a leftover `public/hot` file (from the Vite dev server) can make the app try to use the dev server and break. You no longer need to remove it manually.
+
+- **Production / staging / non-local:** `public/hot` is removed automatically on container start (Docker entrypoint) and after `composer install` / `composer update`.
+- **Local:** `public/hot` is left as-is so Vite works normally. To clear it on boot locally as well, set in `.env`:
+  ```env
+  CLEAR_VITE_HOT_ON_BOOT=true
+  ```
+
+The Artisan command `php artisan app:clear-vite-hot` runs the same logic (skips in local unless `CLEAR_VITE_HOT_ON_BOOT=true`). You can run it manually anytime.
+
 ## Troubleshooting
 - `make` not found on Windows: use the PowerShell commands above or run in WSL.
 - `No application encryption key`: run `php artisan key:generate` inside the app container.
