@@ -14,8 +14,7 @@ import { Head, Link } from '@inertiajs/vue3';
                 </div>
                 <h1 class="text-3xl font-semibold">You’re signed in.</h1>
                 <p class="max-w-2xl text-sm text-slate-300">
-                    Phase B delivers authentication, role-based access control, and the admin skeleton.
-                    Content workflows will arrive in later phases.
+                    You have access to questions, projects, bookmarks, and the AI knowledge base.
                 </p>
                 <div class="mt-4">
                     <Link

@@ -18,11 +18,11 @@ const user = computed(() => page.props.auth.user);
                     </div>
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Knowledge Hub</p>
-                        <p class="text-lg font-semibold">za Timove</p>
+                        <p class="text-lg font-semibold">for Teams</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-400">
-                    <span class="hidden sm:inline">Phase B - Auth &amp; RBAC</span>
+                    <span class="hidden sm:inline">Q&amp;A &amp; Knowledge Base</span>
                     <Link
                         v-if="!user"
                         :href="route('login')"

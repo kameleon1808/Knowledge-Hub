@@ -14,7 +14,7 @@ import { Link } from '@inertiajs/vue3';
                     </div>
                     <div>
                         <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Knowledge Hub</p>
-                        <p class="text-lg font-semibold">za Timove</p>
+                        <p class="text-lg font-semibold">for Teams</p>
                     </div>
                 </Link>
                 <span class="text-xs uppercase tracking-[0.2em] text-slate-500">Secure Access</span>

@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "knowledge-hub/knowledge-hub-za-timove",
     "type": "project",
-    "description": "Knowledge Hub za Timove - internal Q&A and learning platform.",
+    "description": "Knowledge Hub for Teams - internal Q&A and learning platform.",
     "keywords": ["laravel", "inertia", "vue", "knowledge-hub"],
     "license": "MIT",
     "require": {

@@ -7,7 +7,7 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { getEcho } from './lib/echo.js';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Knowledge Hub za Timove';
+const appName = import.meta.env.VITE_APP_NAME || 'Knowledge Hub for Teams';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
