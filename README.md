@@ -115,6 +115,7 @@ Edit `backend/.env` as needed. Key variables:
 - **Database:** `DB_*` — `DB_PASSWORD` must match `POSTGRES_PASSWORD` in `docker-compose.yml`
 - **Queue:** `QUEUE_CONNECTION` — use `database` (default) or `redis`; Phase I document processing runs via queue jobs
 - **Reverb (Phase G):** `REVERB_*` for real-time broadcasting
+- **Vite (Docker):** `VITE_DEV_SERVER_URL=http://localhost:5173` — ensures the Vite hot file uses a URL the browser can load (avoids `ERR_ADDRESS_INVALID` / blank page). Set in `docker-compose` for `app` and `node`; keep in `.env` if you run Laravel outside Docker.
 - **AI (Phase H / Phase I):** `AI_PROVIDER` (`openai`, `anthropic`, `gemini`, or `mock`), `AI_ENABLED`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`; for RAG embeddings add `AI_EMBEDDING_MODEL` and `AI_EMBEDDING_DIMENSION` (e.g. 1536 for OpenAI text-embedding-3-small). See `docs/phase-h-ai-integration.md` and `docs/phase-i-rag-knowledge-base.md`.
 
 All AI calls (including RAG embeddings and chat) are audited in `ai_audit_logs`.
@@ -155,7 +156,7 @@ The Artisan command `php artisan app:clear-vite-hot` runs the same logic (skips 
 ## Troubleshooting
 - `make` not found on Windows: use the PowerShell commands above or run in WSL.
 - `No application encryption key`: run `php artisan key:generate` inside the app container.
-- `Vite manifest not found` or blank page: ensure the `node` service is running or run `npm run build` in that container.
+- `Vite manifest not found` or blank page: ensure the `node` service is running or run `npm run build` in that container. If the console shows `ERR_ADDRESS_INVALID` for `client` or `app.js`, the Vite hot file contained an invalid URL (e.g. `[::]` or `0.0.0.0`); the app now fixes this automatically when `VITE_DEV_SERVER_URL` is set (e.g. in `docker-compose`). Restart the `node` and `app` containers so the updated hot file or fallback is used.
 - `npm ENOTEMPTY` (node_modules volume stuck): remove only the `node_modules` volume and restart.
 - `host not found in upstream "app"`: the PHP container isn't running; restart `app` first, then `web`.
 - Database connection errors: wait ~10 seconds for Postgres to start, then re-run migrations.
@@ -172,8 +173,14 @@ docker compose up -d --build
 ```
 If the volume name is different, use the exact name shown by `docker volume ls`.
 
+### Fix for `env: 'bash\r': No such file or directory` (app / queue / reverb)
+The entrypoint script had Windows line endings (CRLF). Shell scripts in `docker/` use LF (see `.gitattributes`). Rebuild the image so the fixed script is copied: `docker compose build --no-cache app` then `docker compose up -d`. If you edit `docker/entrypoint.sh` on Windows, save with LF line endings or run `git add --renormalize docker/entrypoint.sh` after changing `.gitattributes`.
+
 ### Fix for `host not found in upstream "app"`
-Nginx starts before PHP-FPM or the `app` container failed.
+Nginx starts before PHP-FPM or the `app` container failed (e.g. due to the entrypoint error above).
+
+### Fix for 502 Bad Gateway
+Nginx can reach the app container but PHP-FPM is not responding. The image is set up so PHP-FPM listens on `0.0.0.0:9000` (see `docker/php/zz-docker.conf`). Rebuild the app image: `docker compose build --no-cache app` then `docker compose up -d`. If 502 persists, check `docker compose logs app` for PHP/Laravel errors (e.g. missing `APP_KEY`, database connection).
 ```powershell
 docker compose up -d app db
 docker compose logs app --tail=100

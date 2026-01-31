@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-# Fail-safe: remove Vite dev server hot file in non-local (or when CLEAR_VITE_HOT_ON_BOOT=true).
-# Command skips deletion in local unless CLEAR_VITE_HOT_ON_BOOT is set.
-if [ -f /var/www/html/artisan ]; then
+# Remove Vite hot file only when not in local (e.g. staging/production).
+# In local/Docker dev we keep public/hot so the node container can write it and the app can use it.
+if [ "${APP_ENV:-local}" != "local" ] && [ -f /var/www/html/artisan ]; then
     php /var/www/html/artisan app:clear-vite-hot --ansi || true
 fi
 

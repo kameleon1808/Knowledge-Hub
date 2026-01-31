@@ -18,6 +18,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/app/vite-hot-url
 /vendor
 Homestead.json
 Homestead.yaml

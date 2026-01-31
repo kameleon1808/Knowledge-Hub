@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Vite Dev Server URL (fallback when public/hot contains 0.0.0.0 or [::])
+    |--------------------------------------------------------------------------
+    |
+    | In Docker, Vite may write a hot file with a URL the browser cannot use.
+    | Set VITE_DEV_SERVER_URL (e.g. http://localhost:5173) so script tags use
+    | a valid host. Same value should be set in the node container for the
+    | hot file to be written correctly.
+    |
+    */
+
+    'vite_dev_server_url' => env('VITE_DEV_SERVER_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
