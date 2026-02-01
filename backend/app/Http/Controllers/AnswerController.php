@@ -12,6 +12,7 @@ use App\Models\Question;
 use App\Notifications\AnswerPostedOnYourQuestion;
 use App\Services\AttachmentService;
 use App\Services\MarkdownService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,15 +50,25 @@ class AnswerController extends Controller
             $notifiable = $question->author;
             $notifiable?->notify(new AnswerPostedOnYourQuestion($answer));
             if ($notifiable) {
-                $latest = $notifiable->notifications()->first();
+                $latest = $notifiable->notifications()->latest('created_at')->first();
                 if ($latest) {
+                    $cacheKey = 'notifications:unread_count:'.$notifiable->id;
+                    $cached = Cache::get($cacheKey);
+                    if ($cached !== null) {
+                        $unreadCount = (int) $cached + 1;
+                        Cache::put($cacheKey, $unreadCount, now()->addMinutes(5));
+                    } else {
+                        $unreadCount = $notifiable->unreadNotifications()->count();
+                        Cache::put($cacheKey, $unreadCount, now()->addMinutes(5));
+                    }
+
                     broadcast(new NotificationCreated(
                         $notifiable->id,
                         (string) $latest->id,
                         $latest->type,
                         $latest->data ?? [],
                         $latest->created_at->toIso8601String(),
-                        $notifiable->unreadNotifications()->count()
+                        $unreadCount
                     ));
                 }
             }

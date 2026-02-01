@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,6 +37,7 @@ class NotificationController extends Controller
         if ($notification->read_at === null) {
             $notification->markAsRead();
         }
+        Cache::forget('notifications:unread_count:'.$request->user()->id);
 
         return response()->json(['success' => true]);
     }
@@ -43,14 +45,21 @@ class NotificationController extends Controller
     public function markAllAsRead(Request $request): JsonResponse
     {
         $request->user()->unreadNotifications->markAsRead();
+        Cache::forget('notifications:unread_count:'.$request->user()->id);
 
         return response()->json(['success' => true]);
     }
 
     public function unreadCount(Request $request): JsonResponse
     {
+        $key = 'notifications:unread_count:'.$request->user()->id;
+
         return response()->json([
-            'unread_count' => $request->user()->unreadNotifications()->count(),
+            'unread_count' => Cache::remember(
+                $key,
+                now()->addMinutes(5),
+                fn () => $request->user()->unreadNotifications()->count()
+            ),
         ]);
     }
 }
