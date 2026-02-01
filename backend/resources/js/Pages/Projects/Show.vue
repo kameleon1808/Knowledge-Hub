@@ -99,8 +99,8 @@ const props = defineProps({
         required: true,
     },
     knowledgeItems: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [], links: [] }),
     },
     ragQueries: {
         type: Array,
@@ -330,7 +330,7 @@ const setTab = (key) => {
                     </div>
                     <ul class="space-y-2">
                         <li
-                            v-for="item in knowledgeItems"
+                            v-for="item in knowledgeItems.data || []"
                             :key="item.id"
                             class="flex flex-col gap-1 rounded-xl border border-slate-800 px-3 py-2 text-sm"
                         >
@@ -353,10 +353,23 @@ const setTab = (key) => {
                                 {{ item.error_message }}
                             </p>
                         </li>
-                        <li v-if="knowledgeItems.length === 0" class="py-4 text-center text-sm text-slate-500">
+                        <li v-if="!(knowledgeItems.data || []).length" class="py-4 text-center text-sm text-slate-500">
                             No documents or emails yet. Upload a file or add an email above.
                         </li>
                     </ul>
+                    <div v-if="knowledgeItems.links?.length" class="mt-4 flex flex-wrap items-center gap-2">
+                        <Link
+                            v-for="link in knowledgeItems.links"
+                            :key="link.label"
+                            :href="link.url || ''"
+                            class="rounded-full border border-slate-800 px-3 py-1 text-sm"
+                            :class="[
+                                link.active ? 'bg-slate-800 text-slate-100' : 'text-slate-400 hover:text-slate-100',
+                                !link.url && 'cursor-not-allowed opacity-50',
+                            ]"
+                            v-html="link.label"
+                        />
+                    </div>
                 </div>
                 <div v-else-if="currentTab === 'ask'" class="space-y-4">
                     <h2 class="text-lg font-semibold text-slate-200">Ask AI</h2>

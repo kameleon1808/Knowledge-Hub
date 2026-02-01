@@ -10,6 +10,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,10 +67,57 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
+        $activeTab = $request->query('tab', 'knowledge');
         $project->load(['owner:id,name,email']);
-        $project->load(['knowledgeItems' => fn ($q) => $q->orderByDesc('created_at')]);
-        $ragQueries = $project->ragQueries()->with('user:id,name')->orderByDesc('created_at')->limit(20)->get();
-        $activityLogs = $project->activityLogs()->with('actor:id,name')->orderByDesc('created_at')->limit(50)->get();
+        $knowledgeItems = $activeTab === 'knowledge'
+            ? $project->knowledgeItems()
+                ->select(['id', 'project_id', 'type', 'title', 'status', 'error_message', 'created_at'])
+                ->orderByDesc('created_at')
+                ->paginate(15)
+                ->withQueryString()
+                ->through(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'title' => $item->title,
+                        'type' => $item->type,
+                        'status' => $item->status,
+                        'error_message' => $item->error_message,
+                        'created_at' => $item->created_at?->toIso8601String(),
+                    ];
+                })
+            : new LengthAwarePaginator([], 0, 15);
+        $ragQueries = $activeTab === 'ask'
+            ? $project->ragQueries()
+                ->select(['id', 'project_id', 'user_id', 'question_text', 'answer_text', 'created_at'])
+                ->orderByDesc('created_at')
+                ->limit(20)
+                ->get()
+                ->map(function ($query) {
+                    return [
+                        'id' => $query->id,
+                        'question_text' => $query->question_text,
+                        'answer_text' => $query->answer_text,
+                        'created_at' => $query->created_at?->toIso8601String(),
+                    ];
+                })
+            : collect();
+        $activityLogs = $activeTab === 'activity'
+            ? $project->activityLogs()
+                ->select(['id', 'project_id', 'actor_user_id', 'action', 'metadata', 'created_at'])
+                ->with('actor:id,name')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'id' => $log->id,
+                        'action' => $log->action,
+                        'metadata' => $log->metadata,
+                        'created_at' => $log->created_at?->toIso8601String(),
+                        'actor' => $log->actor?->only(['id', 'name']),
+                    ];
+                })
+            : collect();
         $members = $project->users()->get(['users.id', 'users.name', 'users.email'])->map(function ($u) use ($project) {
             return [
                 'id' => $u->id,
@@ -80,12 +128,17 @@ class ProjectController extends Controller
         });
 
         return Inertia::render('Projects/Show', [
-            'project' => $project,
-            'knowledgeItems' => $project->knowledgeItems,
+            'project' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'owner' => $project->owner?->only(['id', 'name', 'email']),
+            ],
+            'knowledgeItems' => $knowledgeItems,
             'ragQueries' => $ragQueries,
             'activityLogs' => $activityLogs,
             'members' => $members,
-            'activeTab' => $request->query('tab', 'knowledge'),
+            'activeTab' => $activeTab,
             'can' => [
                 'update' => $request->user()->can('update', $project),
                 'manageMembers' => $request->user()->can('manageMembers', $project),
