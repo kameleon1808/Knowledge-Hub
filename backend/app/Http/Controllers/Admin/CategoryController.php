@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Services\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,6 +56,7 @@ class CategoryController extends Controller
             $category->slug = $this->slugs->generate($category, $request->string('name')->toString());
             $category->save();
         });
+        Cache::forget('categories:list');
 
         return redirect()
             ->route('admin.categories.index')
@@ -76,6 +78,7 @@ class CategoryController extends Controller
             $category->slug = $this->slugs->generate($category, $request->string('name')->toString(), $category->id);
             $category->save();
         });
+        Cache::forget('categories:list');
 
         return redirect()
             ->route('admin.categories.index')
@@ -106,6 +109,7 @@ class CategoryController extends Controller
                 ->route('admin.categories.index')
                 ->with('error', 'Category could not be deleted due to linked data. Please reassign or try again.');
         }
+        Cache::forget('categories:list');
 
         return redirect()
             ->route('admin.categories.index')

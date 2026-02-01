@@ -20,7 +20,13 @@ class QuestionIndexQuery
         $filters = $this->filters();
 
         $query = Question::query()
-            ->select('questions.*')
+            ->select([
+                'questions.id',
+                'questions.user_id',
+                'questions.category_id',
+                'questions.title',
+                'questions.created_at',
+            ])
             ->with(['author:id,name', 'category:id,name,slug', 'tags:id,name,slug'])
             ->withCount(['answers', 'bookmarks'])
             ->withSum('votes as score', 'value');

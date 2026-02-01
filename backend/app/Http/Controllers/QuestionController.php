@@ -15,6 +15,7 @@ use App\Queries\QuestionIndexQuery;
 use App\Services\AttachmentService;
 use App\Services\MarkdownService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -32,13 +33,52 @@ class QuestionController extends Controller
     public function index(Request $request): Response
     {
         $query = new QuestionIndexQuery($request);
-        $questions = $query->paginate();
+        $filters = $query->filters();
+        $userId = $request->user()?->id;
+        $page = (int) $request->input('page', 1);
+        $cacheKey = 'questions:index:' . md5(json_encode([
+            'filters' => $filters,
+            'page' => $page,
+            'user' => $userId,
+        ]));
+
+        $questions = Cache::remember($cacheKey, now()->addSeconds(45), function () use ($query) {
+            return $query->paginate()->through(function (Question $question) {
+                return [
+                    'id' => $question->id,
+                    'title' => $question->title,
+                    'created_at' => $question->created_at?->toIso8601String(),
+                    'author' => $question->author?->only(['id', 'name']),
+                    'category' => $question->category?->only(['id', 'name', 'slug']),
+                    'tags' => $question->tags->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug']))->values(),
+                    'answers_count' => $question->answers_count,
+                    'bookmarks_count' => $question->bookmarks_count,
+                    'is_bookmarked' => (bool) ($question->is_bookmarked ?? false),
+                ];
+            })->toArray();
+        });
 
         return Inertia::render('Questions/Index', [
             'questions' => $questions,
-            'filters' => $query->filters(),
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'slug']),
-            'tags' => Tag::query()->orderBy('name')->get(['id', 'name', 'slug']),
+            'filters' => $filters,
+            'categories' => Cache::remember(
+                'categories:list',
+                now()->addHours(6),
+                fn () => Category::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug', 'parent_id'])
+                    ->map(fn (Category $category) => $category->only(['id', 'name', 'slug', 'parent_id']))
+                    ->all()
+            ),
+            'tags' => Cache::remember(
+                'tags:list',
+                now()->addHours(6),
+                fn () => Tag::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug'])
+                    ->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug']))
+                    ->all()
+            ),
             'can' => [
                 'create' => $request->user()->can('create', Question::class),
             ],
@@ -48,8 +88,24 @@ class QuestionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Questions/Create', [
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'tags' => Tag::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => Cache::remember(
+                'categories:list',
+                now()->addHours(6),
+                fn () => Category::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug', 'parent_id'])
+                    ->map(fn (Category $category) => $category->only(['id', 'name', 'slug', 'parent_id']))
+                    ->all()
+            ),
+            'tags' => Cache::remember(
+                'tags:list',
+                now()->addHours(6),
+                fn () => Tag::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug'])
+                    ->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug']))
+                    ->all()
+            ),
             'attachmentConfig' => $this->attachmentConfig(),
         ]);
     }
@@ -88,41 +144,72 @@ class QuestionController extends Controller
     public function show(Request $request, Question $question): Response
     {
         $userId = $request->user()?->id;
-
-        $question->load([
-            'author',
-            'category',
-            'tags',
-            'attachments',
-            'comments.user',
-            'bookmarks' => function ($bookmarkQuery) use ($userId) {
-                if ($userId) {
-                    $bookmarkQuery->where('user_id', $userId);
-                } else {
-                    $bookmarkQuery->whereRaw('1 = 0');
-                }
+        $answerRelations = [
+            'author:id,name,reputation',
+            'attachments:id,attachable_id,attachable_type,url,original_name,mime_type,size_bytes',
+            'comments' => function ($commentQuery) {
+                $commentQuery
+                    ->select(['id', 'commentable_id', 'commentable_type', 'user_id', 'body_markdown', 'body_html', 'created_at'])
+                    ->orderBy('created_at')
+                    ->with('user:id,name');
             },
-            'votes' => function ($query) use ($userId) {
-                if ($userId) {
-                    $query->where('user_id', $userId);
-                }
-            },
-        ]);
+        ];
 
-        $question->loadSum('votes as score', 'value');
+        if ($userId) {
+            $answerRelations['votes'] = function ($voteQuery) use ($userId) {
+                $voteQuery->where('user_id', $userId);
+            };
+        }
 
-        $question->load(['answers' => function ($query) use ($userId) {
-            $query->with([
-                'author',
-                'attachments',
-                'comments.user',
-                'votes' => function ($voteQuery) use ($userId) {
-                    if ($userId) {
-                        $voteQuery->where('user_id', $userId);
-                    }
+        $question = Question::query()
+            ->select([
+                'questions.id',
+                'questions.user_id',
+                'questions.category_id',
+                'questions.title',
+                'questions.body_html',
+                'questions.body_markdown',
+                'questions.created_at',
+                'questions.accepted_answer_id',
+            ])
+            ->with([
+                'author:id,name,reputation',
+                'category:id,name,slug',
+                'tags:id,name,slug',
+                'attachments:id,attachable_id,attachable_type,url,original_name,mime_type,size_bytes',
+                'comments' => function ($commentQuery) {
+                    $commentQuery
+                        ->select(['id', 'commentable_id', 'commentable_type', 'user_id', 'body_markdown', 'body_html', 'created_at'])
+                        ->orderBy('created_at')
+                        ->with('user:id,name');
                 },
-            ])->withSum('votes as score', 'value')->orderBy('created_at');
-        }]);
+                'answers' => function ($query) use ($answerRelations) {
+                    $query->select([
+                        'answers.id',
+                        'answers.question_id',
+                        'answers.user_id',
+                        'answers.body_markdown',
+                        'answers.body_html',
+                        'answers.created_at',
+                        'answers.ai_generated',
+                    ])->with($answerRelations)->withSum('votes as score', 'value')->orderBy('created_at');
+                },
+            ])
+            ->withCount('bookmarks')
+            ->withSum('votes as score', 'value')
+            ->when($userId, function ($query) use ($userId) {
+                $query->with(['votes' => function ($voteQuery) use ($userId) {
+                    $voteQuery->where('user_id', $userId);
+                }]);
+            })
+            ->when($userId, function ($query) use ($userId) {
+                $query->withExists(['bookmarks as is_bookmarked' => function ($bookmarkQuery) use ($userId) {
+                    $bookmarkQuery->where('user_id', $userId);
+                }]);
+            }, function ($query) {
+                $query->selectRaw('false as is_bookmarked');
+            })
+            ->findOrFail($question->id);
 
         $questionPayload = [
             'id' => $question->id,
@@ -137,11 +224,11 @@ class QuestionController extends Controller
             'category' => $question->category?->only(['id', 'name', 'slug']),
             'tags' => $question->tags->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug'])),
             'score' => $question->score,
-            'current_user_vote' => $question->votes->first()?->value,
+            'current_user_vote' => $userId ? $question->votes->first()?->value : null,
             'accepted_answer_id' => $question->accepted_answer_id,
             'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
-            'bookmarks_count' => $question->bookmarks()->count(),
-            'is_bookmarked' => $question->bookmarks->isNotEmpty(),
+            'bookmarks_count' => $question->bookmarks_count,
+            'is_bookmarked' => (bool) $question->is_bookmarked,
             'comments' => $question->comments->map(fn (Comment $comment) => $this->commentPayload($comment, $request->user())),
             'can' => [
                 'update' => $request->user()->can('update', $question),
@@ -152,7 +239,7 @@ class QuestionController extends Controller
             ],
         ];
 
-        $answers = $question->answers->map(function ($answer) use ($request, $question) {
+        $answers = $question->answers->map(function ($answer) use ($request, $question, $userId) {
             return [
                 'id' => $answer->id,
                 'body_html' => $answer->body_html ?: $this->markdown->toHtml($answer->body_markdown),
@@ -163,7 +250,7 @@ class QuestionController extends Controller
                     'reputation' => $answer->author?->reputation ?? 0,
                 ],
                 'score' => $answer->score,
-                'current_user_vote' => $answer->votes->first()?->value,
+                'current_user_vote' => $userId ? $answer->votes->first()?->value : null,
                 'is_accepted' => $answer->id === $question->accepted_answer_id,
                 'ai_generated' => (bool) $answer->ai_generated,
                 'attachments' => $answer->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
@@ -200,8 +287,24 @@ class QuestionController extends Controller
                 'attachments' => $question->attachments->map(fn (Attachment $attachment) => $this->attachmentPayload($attachment)),
                 'tag_ids' => $question->tags()->pluck('tags.id')->all(),
             ],
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'tags' => Tag::query()->orderBy('name')->get(['id', 'name']),
+            'categories' => Cache::remember(
+                'categories:list',
+                now()->addHours(6),
+                fn () => Category::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug', 'parent_id'])
+                    ->map(fn (Category $category) => $category->only(['id', 'name', 'slug', 'parent_id']))
+                    ->all()
+            ),
+            'tags' => Cache::remember(
+                'tags:list',
+                now()->addHours(6),
+                fn () => Tag::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug'])
+                    ->map(fn (Tag $tag) => $tag->only(['id', 'name', 'slug']))
+                    ->all()
+            ),
             'attachmentConfig' => $this->attachmentConfig(),
         ]);
     }

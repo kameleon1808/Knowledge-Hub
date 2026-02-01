@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Services\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -54,6 +55,7 @@ class TagController extends Controller
             $tag->slug = $this->slugs->generate($tag, $tag->name);
             $tag->save();
         });
+        Cache::forget('tags:list');
 
         return redirect()
             ->route('admin.tags.index')
@@ -74,6 +76,7 @@ class TagController extends Controller
             $tag->slug = $this->slugs->generate($tag, $tag->name, $tag->id);
             $tag->save();
         });
+        Cache::forget('tags:list');
 
         return redirect()
             ->route('admin.tags.index')
@@ -86,6 +89,7 @@ class TagController extends Controller
             $tag->questions()->detach();
             $tag->delete();
         });
+        Cache::forget('tags:list');
 
         return redirect()
             ->route('admin.tags.index')
