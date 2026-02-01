@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\KnowledgeChunk;
 use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 
@@ -39,9 +38,9 @@ class RagService
 
         $vectorStr = '[' . implode(',', array_map(fn ($x) => (float) $x, $vector)) . ']';
 
-        $chunkIds = DB::select(
+        $chunks = DB::select(
             "
-            SELECT kc.id
+            SELECT kc.id, kc.content_text, kc.knowledge_item_id, ki.title as item_title
             FROM knowledge_chunks kc
             INNER JOIN knowledge_items ki ON ki.id = kc.knowledge_item_id
             WHERE ki.project_id = ?
@@ -51,24 +50,16 @@ class RagService
             [$project->id, $vectorStr, self::TOP_K]
         );
 
-        if ($chunkIds === []) {
+        if ($chunks === []) {
             return [];
         }
 
-        $ids = array_map(fn ($row) => $row->id, $chunkIds);
-        $chunks = KnowledgeChunk::query()
-            ->whereIn('id', $ids)
-            ->with('knowledgeItem:id,title')
-            ->get()
-            ->sortBy(fn ($c) => (int) array_search($c->id, $ids, true))
-            ->values();
-
-        return $chunks->map(fn ($c) => [
-            'id' => $c->id,
-            'content_text' => $c->content_text,
-            'knowledge_item_id' => $c->knowledge_item_id,
-            'item_title' => $c->knowledgeItem?->title,
-        ])->all();
+        return array_map(fn ($row) => [
+            'id' => (int) $row->id,
+            'content_text' => $row->content_text,
+            'knowledge_item_id' => (int) $row->knowledge_item_id,
+            'item_title' => $row->item_title,
+        ], $chunks);
     }
 
     /**
