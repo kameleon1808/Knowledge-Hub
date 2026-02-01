@@ -123,11 +123,11 @@ class QuestionIndexQuery
     private function applyDateFilter(Builder $query, ?string $from, ?string $to): void
     {
         if ($from) {
-            $query->whereDate('questions.created_at', '>=', $from);
+            $query->where('questions.created_at', '>=', Carbon::parse($from)->startOfDay());
         }
 
         if ($to) {
-            $query->whereDate('questions.created_at', '<=', $to);
+            $query->where('questions.created_at', '<=', Carbon::parse($to)->endOfDay());
         }
     }
 
